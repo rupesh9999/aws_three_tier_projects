@@ -1,0 +1,362 @@
+pipeline {
+    agent {
+        kubernetes {
+            label 'streamflix-build'
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins-builder
+  containers:
+  - name: maven
+    image: maven:3.9.6-eclipse-temurin-21
+    command: ["sleep"]
+    args: ["infinity"]
+    resources:
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+      limits:
+        cpu: "2"
+        memory: "4Gi"
+    volumeMounts:
+    - name: maven-cache
+      mountPath: /root/.m2
+  - name: node
+    image: node:20-alpine
+    command: ["sleep"]
+    args: ["infinity"]
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+  - name: docker
+    image: docker:24-dind
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+  - name: aws-cli
+    image: amazon/aws-cli:2.15.0
+    command: ["sleep"]
+    args: ["infinity"]
+  - name: trivy
+    image: aquasec/trivy:latest
+    command: ["sleep"]
+    args: ["infinity"]
+  volumes:
+  - name: maven-cache
+    persistentVolumeClaim:
+      claimName: maven-cache-pvc
+'''
+        }
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_TAG = "${env.GIT_COMMIT?.take(8) ?: 'latest'}"
+        SONAR_HOST_URL = credentials('sonarqube-url')
+        SONAR_TOKEN = credentials('sonarqube-token')
+    }
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        timestamps()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.GIT_BRANCH_NAME = sh(
+                        script: 'git rev-parse --abbrev-ref HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+
+        stage('Parallel Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        container('node') {
+                            dir('frontend') {
+                                sh '''
+                                    npm ci --prefer-offline
+                                    npm run lint
+                                    npm run test:coverage
+                                    npm run build
+                                '''
+                            }
+                        }
+                    }
+                }
+
+                stage('Build Backend Services') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                sh '''
+                                    mvn -B clean verify \
+                                        -DskipTests=false \
+                                        -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Code Quality Analysis') {
+            parallel {
+                stage('Frontend SonarQube') {
+                    steps {
+                        container('node') {
+                            dir('frontend') {
+                                withSonarQubeEnv('SonarQube') {
+                                    sh '''
+                                        npx sonar-scanner \
+                                            -Dsonar.projectKey=streamflix-frontend \
+                                            -Dsonar.sources=src \
+                                            -Dsonar.tests=src \
+                                            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx \
+                                            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+
+                stage('Backend SonarQube') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                withSonarQubeEnv('SonarQube') {
+                                    sh '''
+                                        mvn -B sonar:sonar \
+                                            -Dsonar.projectKey=streamflix-backend \
+                                            -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    branch pattern: "release/*", comparator: "GLOB"
+                }
+            }
+            steps {
+                container('docker') {
+                    script {
+                        def services = [
+                            'frontend',
+                            'api-gateway',
+                            'auth-service',
+                            'content-service',
+                            'playback-service',
+                            'search-service',
+                            'notification-service',
+                            'billing-service'
+                        ]
+                        
+                        services.each { service ->
+                            def dockerfilePath = service == 'frontend' ? 'frontend' : "backend/${service}"
+                            sh """
+                                docker build \
+                                    -t ${ECR_REGISTRY}/streamflix/${service}:${IMAGE_TAG} \
+                                    -t ${ECR_REGISTRY}/streamflix/${service}:latest \
+                                    --build-arg BUILD_DATE=\$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+                                    --build-arg GIT_COMMIT=${GIT_COMMIT_SHORT} \
+                                    -f ${dockerfilePath}/Dockerfile \
+                                    ${dockerfilePath}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    branch pattern: "release/*", comparator: "GLOB"
+                }
+            }
+            steps {
+                container('trivy') {
+                    script {
+                        def services = [
+                            'frontend',
+                            'api-gateway',
+                            'auth-service',
+                            'content-service',
+                            'playback-service',
+                            'search-service',
+                            'notification-service',
+                            'billing-service'
+                        ]
+                        
+                        services.each { service ->
+                            sh """
+                                trivy image \
+                                    --exit-code 1 \
+                                    --severity HIGH,CRITICAL \
+                                    --ignore-unfixed \
+                                    --format table \
+                                    ${ECR_REGISTRY}/streamflix/${service}:${IMAGE_TAG}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push to ECR') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    branch pattern: "release/*", comparator: "GLOB"
+                }
+            }
+            steps {
+                container('aws-cli') {
+                    script {
+                        sh """
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                            docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        """
+                        
+                        def services = [
+                            'frontend',
+                            'api-gateway',
+                            'auth-service',
+                            'content-service',
+                            'playback-service',
+                            'search-service',
+                            'notification-service',
+                            'billing-service'
+                        ]
+                        
+                        services.each { service ->
+                            sh """
+                                docker push ${ECR_REGISTRY}/streamflix/${service}:${IMAGE_TAG}
+                                docker push ${ECR_REGISTRY}/streamflix/${service}:latest
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update K8s Manifests') {
+            when {
+                branch 'main'
+            }
+            steps {
+                container('aws-cli') {
+                    withCredentials([gitUsernamePassword(credentialsId: 'github-credentials')]) {
+                        sh """
+                            git clone https://github.com/streamflix/streamflix-k8s-manifests.git
+                            cd streamflix-k8s-manifests
+                            
+                            # Update image tags in kustomization
+                            for service in frontend api-gateway auth-service content-service playback-service search-service notification-service billing-service; do
+                                sed -i "s|newTag:.*|newTag: ${IMAGE_TAG}|g" services/\${service}/kustomization.yaml
+                            done
+                            
+                            git config user.email "jenkins@streamflix.com"
+                            git config user.name "Jenkins CI"
+                            git add .
+                            git commit -m "Update image tags to ${IMAGE_TAG}" || true
+                            git push origin main
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                container('aws-cli') {
+                    sh """
+                        aws eks update-kubeconfig --region ${AWS_REGION} --name streamflix-staging
+                        kubectl set image deployment/frontend frontend=${ECR_REGISTRY}/streamflix/frontend:${IMAGE_TAG} -n streamflix-staging
+                        kubectl set image deployment/api-gateway api-gateway=${ECR_REGISTRY}/streamflix/api-gateway:${IMAGE_TAG} -n streamflix-staging
+                        kubectl rollout status deployment/frontend -n streamflix-staging --timeout=300s
+                        kubectl rollout status deployment/api-gateway -n streamflix-staging --timeout=300s
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit '**/target/surefire-reports/*.xml'
+            publishHTML(target: [
+                reportName: 'Code Coverage',
+                reportDir: 'backend/target/site/jacoco-aggregate',
+                reportFiles: 'index.html',
+                keepAll: true
+            ])
+        }
+        success {
+            slackSend(
+                channel: '#streamflix-deployments',
+                color: 'good',
+                message: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            )
+        }
+        failure {
+            slackSend(
+                channel: '#streamflix-deployments',
+                color: 'danger',
+                message: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            )
+        }
+        cleanup {
+            cleanWs()
+        }
+    }
+}

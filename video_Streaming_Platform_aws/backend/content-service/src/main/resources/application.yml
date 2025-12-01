@@ -1,0 +1,78 @@
+# =============================================================================
+# StreamFlix Content Service Configuration
+# =============================================================================
+
+spring:
+  application:
+    name: content-service
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:streamflix_content}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: content
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    schemas: content
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+
+server:
+  port: ${SERVER_PORT:8082}
+  servlet:
+    context-path: /api/v1/content
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    root: INFO
+    com.streamflix: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket: ${S3_BUCKET:streamflix-content}
+    cdn-url: ${CDN_URL:https://cdn.streamflix.com}
+
+# Application Configuration
+app:
+  content:
+    max-upload-size: 10737418240  # 10GB
+    allowed-video-formats: mp4,mkv,avi,mov,webm
+    thumbnail-sizes: 160x90,320x180,640x360,1280x720

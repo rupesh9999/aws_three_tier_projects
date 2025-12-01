@@ -1,0 +1,19 @@
+# ============================================================================
+# Backend Kustomization
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/name: backend
+  app.kubernetes.io/component: api
+  app.kubernetes.io/part-of: fintech-banking

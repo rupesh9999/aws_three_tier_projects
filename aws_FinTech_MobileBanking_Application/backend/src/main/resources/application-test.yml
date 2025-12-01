@@ -1,0 +1,41 @@
+# ============================================================================
+# Test Environment Configuration
+# ============================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+  
+  h2:
+    console:
+      enabled: true
+  
+  flyway:
+    enabled: false
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# JWT Configuration for testing
+jwt:
+  secret: test-secret-key-for-unit-testing-only-do-not-use-in-production-min-256-bits
+  expiration: 3600000
+  refresh-expiration: 86400000
+
+# Logging
+logging:
+  level:
+    com.fintech.banking: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

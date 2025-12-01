@@ -1,0 +1,492 @@
+// ============================================================================
+// FinTech Mobile Banking - Jenkins CI/CD Pipeline
+// ============================================================================
+
+@Library('shared-library') _
+
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  serviceAccountName: jenkins-agent
+                  containers:
+                  - name: maven
+                    image: maven:3.9-eclipse-temurin-21
+                    command:
+                    - sleep
+                    args:
+                    - infinity
+                    volumeMounts:
+                    - name: maven-cache
+                      mountPath: /root/.m2
+                  - name: node
+                    image: node:22-alpine
+                    command:
+                    - sleep
+                    args:
+                    - infinity
+                    volumeMounts:
+                    - name: npm-cache
+                      mountPath: /root/.npm
+                  - name: docker
+                    image: docker:24-dind
+                    securityContext:
+                      privileged: true
+                    volumeMounts:
+                    - name: docker-socket
+                      mountPath: /var/run/docker.sock
+                  - name: terraform
+                    image: hashicorp/terraform:1.7
+                    command:
+                    - sleep
+                    args:
+                    - infinity
+                  - name: trivy
+                    image: aquasec/trivy:latest
+                    command:
+                    - sleep
+                    args:
+                    - infinity
+                  - name: kubectl
+                    image: bitnami/kubectl:1.29
+                    command:
+                    - sleep
+                    args:
+                    - infinity
+                  volumes:
+                  - name: maven-cache
+                    persistentVolumeClaim:
+                      claimName: maven-cache-pvc
+                  - name: npm-cache
+                    persistentVolumeClaim:
+                      claimName: npm-cache-pvc
+                  - name: docker-socket
+                    hostPath:
+                      path: /var/run/docker.sock
+            '''
+        }
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        APP_NAME = 'fintech-banking'
+        SONAR_HOST_URL = credentials('sonarqube-url')
+        SONAR_TOKEN = credentials('sonarqube-token')
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 60, unit: 'MINUTES')
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'staging', 'prod'],
+            description: 'Target deployment environment'
+        )
+        booleanParam(
+            name: 'SKIP_TESTS',
+            defaultValue: false,
+            description: 'Skip test execution'
+        )
+        booleanParam(
+            name: 'DEPLOY',
+            defaultValue: true,
+            description: 'Deploy to target environment'
+        )
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.IMAGE_TAG = "${params.ENVIRONMENT}-${env.GIT_COMMIT_SHORT}-${env.BUILD_NUMBER}"
+                }
+            }
+        }
+
+        stage('Security Scan - Secrets') {
+            steps {
+                container('trivy') {
+                    sh '''
+                        trivy fs --scanners secret --severity HIGH,CRITICAL \
+                            --exit-code 1 --no-progress .
+                    '''
+                }
+            }
+        }
+
+        stage('Build & Test') {
+            parallel {
+                stage('Frontend') {
+                    stages {
+                        stage('Install Dependencies') {
+                            steps {
+                                container('node') {
+                                    dir('frontend') {
+                                        sh 'npm ci'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Lint') {
+                            steps {
+                                container('node') {
+                                    dir('frontend') {
+                                        sh 'npm run lint'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Unit Tests') {
+                            when {
+                                expression { !params.SKIP_TESTS }
+                            }
+                            steps {
+                                container('node') {
+                                    dir('frontend') {
+                                        sh 'npm run test:coverage'
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    publishHTML([
+                                        allowMissing: false,
+                                        alwaysLinkToLastBuild: true,
+                                        keepAll: true,
+                                        reportDir: 'frontend/coverage',
+                                        reportFiles: 'lcov-report/index.html',
+                                        reportName: 'Frontend Coverage Report'
+                                    ])
+                                }
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                container('node') {
+                                    dir('frontend') {
+                                        sh 'npm run build'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                stage('Backend') {
+                    stages {
+                        stage('Compile') {
+                            steps {
+                                container('maven') {
+                                    dir('backend') {
+                                        sh 'mvn clean compile -DskipTests'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Unit Tests') {
+                            when {
+                                expression { !params.SKIP_TESTS }
+                            }
+                            steps {
+                                container('maven') {
+                                    dir('backend') {
+                                        sh 'mvn test'
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    junit 'backend/target/surefire-reports/*.xml'
+                                    jacoco(
+                                        execPattern: 'backend/target/jacoco.exec',
+                                        classPattern: 'backend/target/classes',
+                                        sourcePattern: 'backend/src/main/java'
+                                    )
+                                }
+                            }
+                        }
+                        stage('Integration Tests') {
+                            when {
+                                expression { !params.SKIP_TESTS && params.ENVIRONMENT != 'prod' }
+                            }
+                            steps {
+                                container('maven') {
+                                    dir('backend') {
+                                        sh 'mvn verify -DskipUnitTests'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Package') {
+                            steps {
+                                container('maven') {
+                                    dir('backend') {
+                                        sh 'mvn package -DskipTests'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            when {
+                expression { !params.SKIP_TESTS }
+            }
+            parallel {
+                stage('Frontend Analysis') {
+                    steps {
+                        container('node') {
+                            dir('frontend') {
+                                withSonarQubeEnv('SonarQube') {
+                                    sh '''
+                                        npx sonar-scanner \
+                                            -Dsonar.projectKey=${APP_NAME}-frontend \
+                                            -Dsonar.sources=src \
+                                            -Dsonar.tests=src \
+                                            -Dsonar.test.inclusions=**/*.test.tsx,**/*.test.ts \
+                                            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Backend Analysis') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                withSonarQubeEnv('SonarQube') {
+                                    sh '''
+                                        mvn sonar:sonar \
+                                            -Dsonar.projectKey=${APP_NAME}-backend \
+                                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                                            -Dsonar.login=${SONAR_TOKEN}
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            when {
+                expression { !params.SKIP_TESTS }
+            }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            parallel {
+                stage('Frontend Image') {
+                    steps {
+                        container('docker') {
+                            dir('frontend') {
+                                sh """
+                                    docker build \
+                                        --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                                        --build-arg VCS_REF=${env.GIT_COMMIT_SHORT} \
+                                        --build-arg VERSION=${env.IMAGE_TAG} \
+                                        -t ${ECR_REGISTRY}/${APP_NAME}/frontend:${env.IMAGE_TAG} \
+                                        -t ${ECR_REGISTRY}/${APP_NAME}/frontend:latest-${params.ENVIRONMENT} \
+                                        .
+                                """
+                            }
+                        }
+                    }
+                }
+                stage('Backend Image') {
+                    steps {
+                        container('docker') {
+                            dir('backend') {
+                                sh """
+                                    docker build \
+                                        --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                                        --build-arg VCS_REF=${env.GIT_COMMIT_SHORT} \
+                                        --build-arg VERSION=${env.IMAGE_TAG} \
+                                        -t ${ECR_REGISTRY}/${APP_NAME}/backend:${env.IMAGE_TAG} \
+                                        -t ${ECR_REGISTRY}/${APP_NAME}/backend:latest-${params.ENVIRONMENT} \
+                                        .
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan - Images') {
+            parallel {
+                stage('Scan Frontend') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --severity HIGH,CRITICAL \
+                                    --exit-code 1 \
+                                    --ignore-unfixed \
+                                    --no-progress \
+                                    ${ECR_REGISTRY}/${APP_NAME}/frontend:${env.IMAGE_TAG}
+                            """
+                        }
+                    }
+                }
+                stage('Scan Backend') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --severity HIGH,CRITICAL \
+                                    --exit-code 1 \
+                                    --ignore-unfixed \
+                                    --no-progress \
+                                    ${ECR_REGISTRY}/${APP_NAME}/backend:${env.IMAGE_TAG}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                container('docker') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                        sh """
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                                docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            
+                            docker push ${ECR_REGISTRY}/${APP_NAME}/frontend:${env.IMAGE_TAG}
+                            docker push ${ECR_REGISTRY}/${APP_NAME}/frontend:latest-${params.ENVIRONMENT}
+                            docker push ${ECR_REGISTRY}/${APP_NAME}/backend:${env.IMAGE_TAG}
+                            docker push ${ECR_REGISTRY}/${APP_NAME}/backend:latest-${params.ENVIRONMENT}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifests') {
+            when {
+                expression { params.DEPLOY }
+            }
+            steps {
+                container('kubectl') {
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh """
+                            git config --global user.email "jenkins@fintech-banking.com"
+                            git config --global user.name "Jenkins CI"
+                            
+                            # Update kustomization with new image tags
+                            cd k8s/overlays/${params.ENVIRONMENT}
+                            
+                            kustomize edit set image \
+                                frontend=${ECR_REGISTRY}/${APP_NAME}/frontend:${env.IMAGE_TAG} \
+                                backend=${ECR_REGISTRY}/${APP_NAME}/backend:${env.IMAGE_TAG}
+                            
+                            git add -A
+                            git commit -m "chore: update image tags to ${env.IMAGE_TAG} [skip ci]" || true
+                            git push https://\${GIT_USER}:\${GIT_TOKEN}@github.com/org/fintech-banking-manifests.git HEAD:main
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Environment') {
+            when {
+                expression { params.DEPLOY }
+            }
+            steps {
+                script {
+                    if (params.ENVIRONMENT == 'prod') {
+                        input message: 'Deploy to Production?', ok: 'Deploy'
+                    }
+                }
+                container('kubectl') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                        sh """
+                            aws eks update-kubeconfig --region ${AWS_REGION} --name ${APP_NAME}-${params.ENVIRONMENT}
+                            
+                            # Apply Kubernetes manifests
+                            kubectl apply -k k8s/overlays/${params.ENVIRONMENT}
+                            
+                            # Wait for rollout
+                            kubectl rollout status deployment/frontend -n ${APP_NAME}-${params.ENVIRONMENT} --timeout=300s
+                            kubectl rollout status deployment/backend -n ${APP_NAME}-${params.ENVIRONMENT} --timeout=300s
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Smoke Tests') {
+            when {
+                expression { params.DEPLOY && !params.SKIP_TESTS }
+            }
+            steps {
+                container('node') {
+                    sh """
+                        # Run basic health checks
+                        curl -f https://api.${params.ENVIRONMENT}.fintech-banking.com/actuator/health || exit 1
+                        curl -f https://${params.ENVIRONMENT}.fintech-banking.com || exit 1
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            slackSend(
+                channel: '#deployments',
+                color: 'good',
+                message: """
+                    :white_check_mark: *Build Successful*
+                    *Job:* ${env.JOB_NAME}
+                    *Build:* #${env.BUILD_NUMBER}
+                    *Environment:* ${params.ENVIRONMENT}
+                    *Image Tag:* ${env.IMAGE_TAG}
+                    *Duration:* ${currentBuild.durationString}
+                """
+            )
+        }
+        failure {
+            slackSend(
+                channel: '#deployments',
+                color: 'danger',
+                message: """
+                    :x: *Build Failed*
+                    *Job:* ${env.JOB_NAME}
+                    *Build:* #${env.BUILD_NUMBER}
+                    *Environment:* ${params.ENVIRONMENT}
+                    *Stage:* ${env.STAGE_NAME}
+                    <${env.BUILD_URL}|View Build>
+                """
+            )
+        }
+    }
+}

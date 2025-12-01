@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamflix-config
+  namespace: streamflix
+data:
+  # Application settings
+  APP_NAME: "StreamFlix"
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  
+  # Service URLs (internal DNS)
+  AUTH_SERVICE_URL: "http://auth-service:8081"
+  CONTENT_SERVICE_URL: "http://content-service:8082"
+  USER_SERVICE_URL: "http://user-service:8083"
+  PLAYBACK_SERVICE_URL: "http://playback-service:8084"
+  SEARCH_SERVICE_URL: "http://search-service:8085"
+  CATALOG_SERVICE_URL: "http://catalog-service:8086"
+  WATCH_HISTORY_SERVICE_URL: "http://watch-history-service:8087"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8088"
+  BILLING_SERVICE_URL: "http://billing-service:8089"
+  
+  # Database settings
+  DB_DRIVER: "org.postgresql.Driver"
+  DB_PORT: "5432"
+  DB_MAX_POOL_SIZE: "20"
+  DB_MIN_IDLE: "5"
+  
+  # Redis settings
+  REDIS_PORT: "6379"
+  REDIS_SSL: "true"
+  
+  # AWS settings
+  AWS_REGION: "us-east-1"
+  
+  # JWT settings
+  JWT_ISSUER: "streamflix"
+  JWT_ACCESS_EXPIRATION: "900000"
+  JWT_REFRESH_EXPIRATION: "604800000"
+  
+  # CORS settings
+  CORS_ALLOWED_ORIGINS: "https://streamflix.com,https://www.streamflix.com"
+  CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+  CORS_ALLOW_CREDENTIALS: "true"
+  
+  # Rate limiting
+  RATE_LIMIT_REQUESTS_PER_SECOND: "100"
+  RATE_LIMIT_BURST_CAPACITY: "200"
+  
+  # Content settings
+  MAX_UPLOAD_SIZE: "10737418240"
+  THUMBNAIL_SIZES: "160x90,320x180,640x360,1280x720"
+  
+  # Playback settings
+  MAX_CONCURRENT_STREAMS_BASIC: "1"
+  MAX_CONCURRENT_STREAMS_STANDARD: "2"
+  MAX_CONCURRENT_STREAMS_PREMIUM: "4"

@@ -1,0 +1,285 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins: agent
+spec:
+  serviceAccountName: jenkins-agent
+  containers:
+  - name: maven
+    image: maven:3.9-eclipse-temurin-21-alpine
+    command:
+    - cat
+    tty: true
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+      limits:
+        memory: "4Gi"
+        cpu: "2"
+    volumeMounts:
+    - name: maven-cache
+      mountPath: /root/.m2/repository
+  - name: node
+    image: node:20-alpine
+    command:
+    - cat
+    tty: true
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+  - name: docker
+    image: docker:24-dind
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+    volumeMounts:
+    - name: docker-socket
+      mountPath: /var/run/docker.sock
+  - name: aws-cli
+    image: amazon/aws-cli:2.15.0
+    command:
+    - cat
+    tty: true
+  volumes:
+  - name: maven-cache
+    persistentVolumeClaim:
+      claimName: maven-cache-pvc
+  - name: docker-socket
+    hostPath:
+      path: /var/run/docker.sock
+'''
+        }
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        PROJECT_NAME = 'ota-travel'
+        ENVIRONMENT = 'production'
+    }
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
+                }
+            }
+        }
+
+        stage('Parallel Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        container('node') {
+                            dir('frontend') {
+                                sh '''
+                                    npm ci
+                                    npm run lint
+                                    npm run build
+                                '''
+                            }
+                        }
+                    }
+                }
+
+                stage('Build Backend') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                sh '''
+                                    mvn clean verify -DskipTests=false \
+                                        -Dmaven.test.failure.ignore=false \
+                                        -B -V
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            parallel {
+                stage('Frontend Tests') {
+                    steps {
+                        container('node') {
+                            dir('frontend') {
+                                sh 'npm run test:ci'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            publishHTML([
+                                reportDir: 'frontend/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Frontend Coverage Report'
+                            ])
+                        }
+                    }
+                }
+
+                stage('Backend Tests') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                sh 'mvn test -B'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            junit 'backend/**/target/surefire-reports/*.xml'
+                            jacoco(
+                                execPattern: 'backend/**/target/jacoco.exec',
+                                classPattern: 'backend/**/target/classes',
+                                sourcePattern: 'backend/**/src/main/java'
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            parallel {
+                stage('SAST - SonarQube') {
+                    steps {
+                        container('maven') {
+                            withSonarQubeEnv('SonarQube') {
+                                dir('backend') {
+                                    sh '''
+                                        mvn sonar:sonar \
+                                            -Dsonar.projectKey=${PROJECT_NAME} \
+                                            -Dsonar.projectName=${PROJECT_NAME} \
+                                            -B
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+
+                stage('Dependency Check') {
+                    steps {
+                        container('maven') {
+                            dir('backend') {
+                                sh 'mvn org.owasp:dependency-check-maven:check -B'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            dependencyCheckPublisher pattern: 'backend/**/dependency-check-report.xml'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build & Push Docker Images') {
+            steps {
+                container('aws-cli') {
+                    sh '''
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    '''
+                }
+                container('docker') {
+                    script {
+                        def services = ['frontend', 'auth-service', 'search-service', 'booking-service', 'payment-service', 'cart-service']
+                        
+                        services.each { service ->
+                            def contextPath = service == 'frontend' ? 'frontend' : "backend/${service}"
+                            def imageName = "${ECR_REGISTRY}/${PROJECT_NAME}-${ENVIRONMENT}-${service}"
+                            
+                            sh """
+                                docker build -t ${imageName}:${IMAGE_TAG} \
+                                    -t ${imageName}:latest \
+                                    -f ${contextPath}/Dockerfile \
+                                    ${contextPath}
+                                docker push ${imageName}:${IMAGE_TAG}
+                                docker push ${imageName}:latest
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update GitOps Repository') {
+            steps {
+                container('aws-cli') {
+                    withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                            git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/your-org/ota-travel-gitops.git
+                            cd ota-travel-gitops
+                            
+                            # Update image tags in Kustomize overlays
+                            for service in frontend auth-service search-service booking-service payment-service cart-service; do
+                                sed -i "s|newTag:.*|newTag: ${IMAGE_TAG}|g" overlays/${ENVIRONMENT}/${service}/kustomization.yaml
+                            done
+                            
+                            git config user.email "jenkins@ota-travel.com"
+                            git config user.name "Jenkins CI"
+                            git add .
+                            git commit -m "Update images to ${IMAGE_TAG} [skip ci]" || true
+                            git push origin main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            slackSend(
+                color: 'good',
+                message: "✅ Build #${env.BUILD_NUMBER} succeeded for ${env.PROJECT_NAME}\nCommit: ${env.GIT_COMMIT_SHORT}\nImage Tag: ${env.IMAGE_TAG}"
+            )
+        }
+        failure {
+            slackSend(
+                color: 'danger',
+                message: "❌ Build #${env.BUILD_NUMBER} failed for ${env.PROJECT_NAME}\nCommit: ${env.GIT_COMMIT_SHORT}"
+            )
+        }
+    }
+}

@@ -1,0 +1,227 @@
+# =============================================================================
+# StreamFlix API Gateway Configuration
+# =============================================================================
+
+spring:
+  application:
+    name: api-gateway
+  
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+              - X-Refresh-Token
+              - X-Request-Id
+            allowCredentials: true
+            maxAge: 3600
+      
+      routes:
+        # Auth Service
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - RewritePath=/api/v1/auth/(?<segment>.*), /api/v1/auth/${segment}
+            - name: CircuitBreaker
+              args:
+                name: authCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                redis-rate-limiter.requestedTokens: 1
+        
+        # Content Service
+        - id: content-service
+          uri: ${CONTENT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/content/**
+          filters:
+            - RewritePath=/api/v1/content/(?<segment>.*), /api/v1/content/${segment}
+            - name: CircuitBreaker
+              args:
+                name: contentCircuitBreaker
+                fallbackUri: forward:/fallback/content
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+        
+        # User Profile Service
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/users/**, /api/v1/profiles/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: userCircuitBreaker
+                fallbackUri: forward:/fallback/user
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+        
+        # Playback Service
+        - id: playback-service
+          uri: ${PLAYBACK_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/playback/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: playbackCircuitBreaker
+                fallbackUri: forward:/fallback/playback
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 200
+                redis-rate-limiter.burstCapacity: 500
+        
+        # Search Service
+        - id: search-service
+          uri: ${SEARCH_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/search/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: searchCircuitBreaker
+                fallbackUri: forward:/fallback/search
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+        
+        # Catalog/Recommendation Service
+        - id: catalog-service
+          uri: ${CATALOG_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/catalog/**, /api/v1/recommendations/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: catalogCircuitBreaker
+                fallbackUri: forward:/fallback/catalog
+        
+        # Watch History Service
+        - id: watch-history-service
+          uri: ${WATCH_HISTORY_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/history/**, /api/v1/watch-history/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: historyCircuitBreaker
+                fallbackUri: forward:/fallback/history
+        
+        # Notification Service
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8088}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: notificationCircuitBreaker
+                fallbackUri: forward:/fallback/notification
+        
+        # Billing Service
+        - id: billing-service
+          uri: ${BILLING_SERVICE_URL:http://localhost:8089}
+          predicates:
+            - Path=/api/v1/billing/**, /api/v1/subscriptions/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: billingCircuitBreaker
+                fallbackUri: forward:/fallback/billing
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-here-change-in-production-must-be-at-least-256-bits}
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      authCircuitBreaker:
+        baseConfig: default
+      contentCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      playbackCircuitBreaker:
+        baseConfig: default
+        waitDurationInOpenState: 5000
+      searchCircuitBreaker:
+        baseConfig: default
+      catalogCircuitBreaker:
+        baseConfig: default
+      historyCircuitBreaker:
+        baseConfig: default
+      notificationCircuitBreaker:
+        baseConfig: default
+      billingCircuitBreaker:
+        baseConfig: default
+  
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 10s
+        cancelRunningFuture: true
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO
+    io.github.resilience4j: DEBUG
+    com.streamflix: DEBUG

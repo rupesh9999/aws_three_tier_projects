@@ -1,0 +1,142 @@
+server:
+  port: 8087
+  shutdown: graceful
+
+spring:
+  application:
+    name: billing-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:streamflix_billing}
+    username: ${DB_USERNAME:streamflix}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Stripe Configuration - NEVER commit actual keys
+stripe:
+  api-key: ${STRIPE_API_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  sqs:
+    billing-events-queue: ${SQS_BILLING_EVENTS_QUEUE:billing-events}
+    subscription-events-queue: ${SQS_SUBSCRIPTION_EVENTS_QUEUE:subscription-events}
+
+# Billing Settings
+billing:
+  currency: USD
+  tax:
+    enabled: true
+    default-rate: 0.0
+  trial:
+    days: 14
+    enabled: true
+  grace-period-days: 7
+  retry:
+    max-attempts: 3
+    delay-hours: 24
+
+# Subscription Plans (loaded from database, these are defaults)
+plans:
+  basic:
+    name: Basic
+    price: 9.99
+    max-screens: 1
+    max-quality: SD
+    features:
+      - Watch on 1 device at a time
+      - Unlimited movies and TV shows
+      - Watch on your phone and tablet
+  standard:
+    name: Standard
+    price: 15.49
+    max-screens: 2
+    max-quality: HD
+    features:
+      - Watch on 2 devices at a time
+      - Unlimited movies and TV shows
+      - Watch on any device
+      - HD available
+  premium:
+    name: Premium
+    price: 22.99
+    max-screens: 4
+    max-quality: UHD
+    features:
+      - Watch on 4 devices at a time
+      - Unlimited movies and TV shows
+      - Watch on any device
+      - HD and Ultra HD available
+      - Spatial audio
+
+# Security
+jwt:
+  public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.streamflix.billing: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-},%X{spanId:-}] %-5level %logger{36} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+stripe:
+  api-key: sk_test_placeholder
+
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    com.streamflix.billing: INFO

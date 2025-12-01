@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-dark-500 text-white font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-400;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-100 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-2.5 rounded font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-600 bg-opacity-70 text-white hover:bg-opacity-100;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-white hover:bg-white hover:bg-opacity-10;
+  }
+
+  .btn-icon {
+    @apply p-2 rounded-full bg-dark-100 bg-opacity-70 text-white hover:bg-opacity-100 transition-all;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-3 bg-dark-200 border border-dark-100 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+  }
+
+  .input-error {
+    @apply border-primary-500 focus:ring-primary-500;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-dark-300 rounded-lg overflow-hidden;
+  }
+
+  .card-hover {
+    @apply card transform transition-all duration-300 hover:scale-105 hover:z-10 hover:shadow-2xl;
+  }
+
+  /* Content row */
+  .content-row {
+    @apply relative px-4 md:px-12 mb-8;
+  }
+
+  .content-row-title {
+    @apply text-lg md:text-xl font-semibold mb-3 text-white;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-gradient-to-r from-dark-300 via-dark-200 to-dark-300 bg-[length:200%_100%] animate-shimmer rounded;
+  }
+
+  /* Video player styles */
+  .video-container {
+    @apply relative w-full aspect-video bg-black;
+  }
+
+  /* Profile avatar */
+  .profile-avatar {
+    @apply w-24 h-24 md:w-32 md:h-32 rounded overflow-hidden cursor-pointer transition-all duration-200 hover:ring-4 hover:ring-white;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-new {
+    @apply badge bg-primary-500 text-white;
+  }
+
+  .badge-hd {
+    @apply badge border border-gray-400 text-gray-400;
+  }
+
+  /* Genre pill */
+  .genre-pill {
+    @apply px-3 py-1 bg-dark-200 rounded-full text-sm text-gray-300 hover:bg-dark-100 transition-colors cursor-pointer;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 animate-fade-in;
+  }
+
+  .modal-content {
+    @apply bg-dark-400 rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-scale-in;
+  }
+}
+
+@layer utilities {
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Text shadow for readability over images */
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Aspect ratios */
+  .aspect-poster {
+    aspect-ratio: 2/3;
+  }
+
+  .aspect-backdrop {
+    aspect-ratio: 16/9;
+  }
+}
+
+/* Video.js custom theme */
+.video-js {
+  @apply w-full h-full;
+}
+
+.video-js .vjs-big-play-button {
+  @apply !bg-primary-500 !border-none !rounded-full !w-16 !h-16;
+  font-size: 2rem !important;
+  line-height: 4rem !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.video-js .vjs-control-bar {
+  @apply !bg-gradient-to-t from-black to-transparent !h-12;
+}
+
+.video-js .vjs-play-progress {
+  @apply !bg-primary-500;
+}
+
+.video-js .vjs-volume-bar .vjs-volume-level {
+  @apply !bg-primary-500;
+}

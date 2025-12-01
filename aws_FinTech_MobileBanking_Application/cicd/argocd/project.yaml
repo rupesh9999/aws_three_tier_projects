@@ -1,0 +1,104 @@
+# ============================================================================
+# ArgoCD Project - FinTech Mobile Banking
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: fintech-banking
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: fintech-banking
+    app.kubernetes.io/component: project
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: FinTech Mobile Banking Application Project
+  
+  # Source repositories
+  sourceRepos:
+    - https://github.com/org/fintech-banking-manifests.git
+    - https://github.com/org/fintech-banking-charts.git
+    
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: fintech-banking-dev
+      server: https://kubernetes.default.svc
+    - namespace: fintech-banking-staging
+      server: https://kubernetes.default.svc
+    - namespace: fintech-banking-prod
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+      
+  # Cluster-scoped resources allowed
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: networking.k8s.io
+      kind: IngressClass
+      
+  # Namespace-scoped resources allowed
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: apps
+      kind: '*'
+    - group: autoscaling
+      kind: '*'
+    - group: batch
+      kind: '*'
+    - group: networking.k8s.io
+      kind: '*'
+    - group: policy
+      kind: '*'
+    - group: rbac.authorization.k8s.io
+      kind: '*'
+    - group: monitoring.coreos.com
+      kind: '*'
+    - group: secrets-store.csi.x-k8s.io
+      kind: '*'
+      
+  # Roles
+  roles:
+    - name: developer
+      description: Developer access to dev and staging
+      policies:
+        - p, proj:fintech-banking:developer, applications, get, fintech-banking/*, allow
+        - p, proj:fintech-banking:developer, applications, sync, fintech-banking/fintech-banking-dev, allow
+        - p, proj:fintech-banking:developer, applications, sync, fintech-banking/fintech-banking-staging, allow
+        - p, proj:fintech-banking:developer, logs, get, fintech-banking/*, allow
+      groups:
+        - fintech-developers
+        
+    - name: admin
+      description: Full admin access
+      policies:
+        - p, proj:fintech-banking:admin, applications, *, fintech-banking/*, allow
+        - p, proj:fintech-banking:admin, logs, get, fintech-banking/*, allow
+        - p, proj:fintech-banking:admin, exec, create, fintech-banking/*, allow
+      groups:
+        - fintech-admins
+        - platform-team
+
+---
+# ============================================================================
+# ArgoCD Repository Credentials
+# ============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fintech-banking-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: git
+  url: https://github.com/org/fintech-banking-manifests.git
+  # Reference GitHub credentials from external secrets
+  username: placeholder
+  password: placeholder

@@ -1,0 +1,207 @@
+# =====================================================
+# FinTech Mobile Banking Application - Unified .gitignore
+# =====================================================
+
+# ====================
+# SECRETS & CREDENTIALS (CRITICAL - NEVER COMMIT)
+# ====================
+.env
+.env.*
+*.env
+*.env.local
+*.env.development
+*.env.production
+*.env.staging
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secret files
+secrets/
+*.secret
+*.secrets
+*credentials*
+*password*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.gpg
+
+# AWS credentials
+.aws/
+aws-credentials
+aws_credentials
+*.aws
+
+# Terraform state (contains secrets)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
+
+# ====================
+# BUILD ARTIFACTS
+# ====================
+# Java/Maven/Gradle
+target/
+build/
+out/
+*.jar
+*.war
+*.ear
+*.class
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.mvn/repository/
+
+# Node.js/Frontend
+node_modules/
+dist/
+.next/
+.nuxt/
+.output/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+
+# Python (if any scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# ====================
+# IDE & EDITOR FILES
+# ====================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+
+# NetBeans
+nbproject/
+nbbuild/
+nbdist/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ====================
+# OS GENERATED FILES
+# ====================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ====================
+# LOG FILES
+# ====================
+logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ====================
+# DOCKER
+# ====================
+.docker/
+docker-compose.override.yml
+
+# ====================
+# KUBERNETES
+# ====================
+kubeconfig
+*.kubeconfig
+.kube/
+
+# ====================
+# TESTING
+# ====================
+coverage/
+.nyc_output/
+test-results/
+*.lcov
+.coverage
+htmlcov/
+
+# ====================
+# PACKAGE MANAGER LOCKS (optional - uncomment if needed)
+# ====================
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ====================
+# TEMPORARY FILES
+# ====================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ====================
+# DOCUMENTATION BUILDS
+# ====================
+docs/_build/
+site/
+.docusaurus/
+
+# ====================
+# MONITORING/OBSERVABILITY
+# ====================
+prometheus_data/
+grafana_data/
+
+# ====================
+# DATABASE
+# ====================
+*.sql.backup
+*.dump
+data/
+pgdata/
+esdata/

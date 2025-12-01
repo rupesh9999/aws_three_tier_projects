@@ -1,0 +1,148 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ota-travel
+  namespace: argocd
+spec:
+  description: OTA Travel Agency Project
+  sourceRepos:
+    - 'https://github.com/your-org/ota-travel-gitops.git'
+  destinations:
+    - namespace: production
+      server: https://kubernetes.default.svc
+    - namespace: staging
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: networking.k8s.io
+      kind: Ingress
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ServiceAccount
+    - group: apps
+      kind: Deployment
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: external-secrets.io
+      kind: ExternalSecret
+    - group: external-secrets.io
+      kind: SecretStore
+  roles:
+    - name: admin
+      policies:
+        - p, proj:ota-travel:admin, applications, *, ota-travel/*, allow
+      groups:
+        - ota-travel-admins
+    - name: developer
+      policies:
+        - p, proj:ota-travel:developer, applications, get, ota-travel/*, allow
+        - p, proj:ota-travel:developer, applications, sync, ota-travel/*, allow
+      groups:
+        - ota-travel-developers
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ota-travel-services
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: frontend
+            path: services/frontend
+          - name: auth-service
+            path: services/auth-service
+          - name: search-service
+            path: services/search-service
+          - name: booking-service
+            path: services/booking-service
+          - name: payment-service
+            path: services/payment-service
+          - name: cart-service
+            path: services/cart-service
+  template:
+    metadata:
+      name: 'ota-travel-{{name}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: '{{name}}'
+        app.kubernetes.io/part-of: ota-travel
+    spec:
+      project: ota-travel
+      source:
+        repoURL: https://github.com/your-org/ota-travel-gitops.git
+        targetRevision: main
+        path: 'overlays/production/{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: production
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      revisionHistoryLimit: 10
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ota-travel-infrastructure
+  namespace: argocd
+spec:
+  project: ota-travel
+  source:
+    repoURL: https://github.com/your-org/ota-travel-gitops.git
+    targetRevision: main
+    path: infrastructure/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ota-travel-monitoring
+  namespace: argocd
+spec:
+  project: ota-travel
+  source:
+    repoURL: https://github.com/your-org/ota-travel-gitops.git
+    targetRevision: main
+    path: monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

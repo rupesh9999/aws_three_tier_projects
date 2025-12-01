@@ -1,0 +1,154 @@
+server:
+  port: 8082
+  shutdown: graceful
+
+spring:
+  application:
+    name: profile-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:streamflix_profiles}
+    username: ${DB_USERNAME:streamflix}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# AWS Configuration
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:streamflix-avatars}
+    region: ${AWS_REGION:us-east-1}
+  sqs:
+    profile-events-queue: ${SQS_PROFILE_EVENTS_QUEUE:profile-events}
+
+# Profile Settings
+profile:
+  max-profiles-per-account: 5
+  avatar:
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+    max-size-bytes: 5242880
+    default-avatar-url: https://cdn.streamflix.com/avatars/default.png
+
+# Security
+jwt:
+  public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+# OpenTelemetry
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  service:
+    name: ${spring.application.name}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.streamflix.profile: DEBUG
+    org.springframework.data: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-},%X{spanId:-}] %-5level %logger{36} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+aws:
+  s3:
+    endpoint: http://localhost:4566
+
+logging:
+  level:
+    com.streamflix.profile: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+aws:
+  s3:
+    endpoint: http://localstack:4566
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    com.streamflix.profile: INFO

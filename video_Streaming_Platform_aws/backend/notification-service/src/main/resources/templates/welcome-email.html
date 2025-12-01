@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to StreamFlix!</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #141414;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e50914;
+            text-decoration: none;
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .hero-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .hero-subtitle {
+            font-size: 18px;
+            color: #b3b3b3;
+        }
+        .content {
+            background-color: #1f1f1f;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #e50914;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 24px;
+        }
+        .feature-text h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+        }
+        .feature-text p {
+            margin: 0;
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+        .cta {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #e50914;
+            color: #ffffff;
+            padding: 16px 60px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        .footer a {
+            color: #b3b3b3;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a th:href="${baseUrl}" class="logo">STREAMFLIX</a>
+        </div>
+        
+        <div class="hero">
+            <h1 class="hero-title">Welcome, <span th:text="${name}">User</span>!</h1>
+            <p class="hero-subtitle">Your entertainment journey starts now</p>
+        </div>
+        
+        <div class="content">
+            <div class="feature">
+                <div class="feature-icon">🎬</div>
+                <div class="feature-text">
+                    <h3>Unlimited Movies & Shows</h3>
+                    <p>Access thousands of titles across all genres</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📱</div>
+                <div class="feature-text">
+                    <h3>Watch Anywhere</h3>
+                    <p>Stream on your TV, phone, tablet, or computer</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⬇️</div>
+                <div class="feature-text">
+                    <h3>Download & Go</h3>
+                    <p>Save titles to watch offline</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                <div class="feature-text">
+                    <h3>Create Profiles</h3>
+                    <p>Everyone gets their own personalized experience</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cta">
+            <a th:href="${baseUrl + '/browse'}" class="button">Start Watching</a>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 StreamFlix. All rights reserved.</p>
+            <p>
+                <a th:href="${baseUrl + '/help'}">Help Center</a> |
+                <a th:href="${baseUrl + '/privacy'}">Privacy Policy</a> |
+                <a th:href="${baseUrl + '/terms'}">Terms of Use</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

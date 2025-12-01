@@ -1,0 +1,54 @@
+{
+  "analysis": {
+    "analyzer": {
+      "content_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "asciifolding",
+          "word_delimiter_graph",
+          "snowball"
+        ]
+      },
+      "autocomplete_analyzer": {
+        "type": "custom",
+        "tokenizer": "autocomplete_tokenizer",
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      },
+      "autocomplete_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      }
+    },
+    "tokenizer": {
+      "autocomplete_tokenizer": {
+        "type": "edge_ngram",
+        "min_gram": 2,
+        "max_gram": 20,
+        "token_chars": [
+          "letter",
+          "digit"
+        ]
+      }
+    },
+    "filter": {
+      "snowball": {
+        "type": "snowball",
+        "language": "English"
+      }
+    }
+  },
+  "index": {
+    "number_of_shards": 3,
+    "number_of_replicas": 1,
+    "max_result_window": 10000
+  }
+}

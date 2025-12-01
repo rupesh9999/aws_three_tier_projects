@@ -1,0 +1,157 @@
+# ============================================================================
+# Prometheus Alert Rules
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  labels:
+    app: prometheus
+data:
+  banking-alerts.rules.yml: |
+    groups:
+      - name: fintech-banking-alerts
+        rules:
+          # High Error Rate
+          - alert: HighErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (service)
+              /
+              sum(rate(http_server_requests_seconds_count[5m])) by (service)
+              > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: High error rate detected
+              description: "Service {{ $labels.service }} has error rate above 5% (current: {{ $value | humanizePercentage }})"
+
+          # High Latency
+          - alert: HighLatency
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, service))
+              > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High latency detected
+              description: "Service {{ $labels.service }} p95 latency is above 1s (current: {{ $value | humanizeDuration }})"
+
+          # Pod Not Ready
+          - alert: PodNotReady
+            expr: |
+              kube_pod_status_ready{condition="true", namespace=~"fintech-banking-.*"} == 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: Pod not ready
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is not ready"
+
+          # High Memory Usage
+          - alert: HighMemoryUsage
+            expr: |
+              container_memory_usage_bytes{namespace=~"fintech-banking-.*"}
+              /
+              container_spec_memory_limit_bytes{namespace=~"fintech-banking-.*"}
+              > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High memory usage
+              description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is using > 90% memory"
+
+          # High CPU Usage
+          - alert: HighCPUUsage
+            expr: |
+              rate(container_cpu_usage_seconds_total{namespace=~"fintech-banking-.*"}[5m])
+              /
+              container_spec_cpu_quota{namespace=~"fintech-banking-.*"}
+              * 100000
+              > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High CPU usage
+              description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is using > 90% CPU"
+
+          # Database Connection Pool Exhausted
+          - alert: DatabaseConnectionPoolExhausted
+            expr: |
+              hikaricp_connections_active / hikaricp_connections_max > 0.9
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: Database connection pool near exhaustion
+              description: "HikariCP pool is > 90% utilized"
+
+          # Transaction Processing Failures
+          - alert: TransactionProcessingFailures
+            expr: |
+              rate(banking_transactions_failed_total[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: High transaction failure rate
+              description: "Transaction failure rate is above threshold"
+
+          # Authentication Failures
+          - alert: HighAuthenticationFailures
+            expr: |
+              rate(banking_auth_failures_total[5m]) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High authentication failure rate
+              description: "Authentication failure rate is unusually high - possible brute force attack"
+
+          # Redis Connection Issues
+          - alert: RedisConnectionIssues
+            expr: |
+              redis_connected_clients < 1
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: Redis connection issues
+              description: "No clients connected to Redis"
+
+      - name: infrastructure-alerts
+        rules:
+          # Node Not Ready
+          - alert: NodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Kubernetes node not ready
+              description: "Node {{ $labels.node }} is not ready"
+
+          # Persistent Volume Almost Full
+          - alert: PersistentVolumeAlmostFull
+            expr: |
+              kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: Persistent volume almost full
+              description: "PV {{ $labels.persistentvolumeclaim }} is > 90% full"
+
+          # Certificate Expiring Soon
+          - alert: CertificateExpiringSoon
+            expr: |
+              (cert_exporter_cert_expires_in_seconds / 86400) < 30
+            for: 1h
+            labels:
+              severity: warning
+            annotations:
+              summary: Certificate expiring soon
+              description: "Certificate {{ $labels.cn }} expires in less than 30 days"
