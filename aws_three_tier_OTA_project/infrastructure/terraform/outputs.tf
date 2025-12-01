@@ -66,8 +66,13 @@ output "s3_bucket_name" {
 }
 
 output "cloudfront_distribution_domain" {
-  description = "CloudFront distribution domain"
-  value       = aws_cloudfront_distribution.frontend.domain_name
+  description = "CloudFront distribution domain (empty if CloudFront is disabled)"
+  value       = var.enable_cloudfront ? aws_cloudfront_distribution.frontend[0].domain_name : ""
+}
+
+output "s3_website_endpoint" {
+  description = "S3 website endpoint (when CloudFront is disabled)"
+  value       = var.enable_cloudfront ? "" : aws_s3_bucket_website_configuration.assets[0].website_endpoint
 }
 
 output "api_gateway_url" {

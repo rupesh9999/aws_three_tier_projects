@@ -27,14 +27,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "assets" {
 resource "aws_s3_bucket_public_access_block" "assets" {
   bucket = aws_s3_bucket.assets.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = var.enable_cloudfront
+  block_public_policy     = var.enable_cloudfront
+  ignore_public_acls      = var.enable_cloudfront
+  restrict_public_buckets = var.enable_cloudfront
 }
 
-# CloudFront Origin Access Control
+# S3 bucket website configuration (when CloudFront is disabled)
+resource "aws_s3_bucket_website_configuration" "assets" {
+  count  = var.enable_cloudfront ? 0 : 1
+  bucket = aws_s3_bucket.assets.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
+# CloudFront Origin Access Control (only when CloudFront is enabled)
 resource "aws_cloudfront_origin_access_control" "assets" {
+  count                             = var.enable_cloudfront ? 1 : 0
   name                              = "${var.project_name}-${var.environment}-oac"
   description                       = "OAC for S3 bucket"
   origin_access_control_origin_type = "s3"
@@ -42,8 +57,9 @@ resource "aws_cloudfront_origin_access_control" "assets" {
   signing_protocol                  = "sigv4"
 }
 
-# CloudFront Distribution
+# CloudFront Distribution (only when CloudFront is enabled)
 resource "aws_cloudfront_distribution" "frontend" {
+  count               = var.enable_cloudfront ? 1 : 0
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "${var.project_name}-${var.environment} frontend distribution"
@@ -53,7 +69,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   origin {
     domain_name              = aws_s3_bucket.assets.bucket_regional_domain_name
     origin_id                = "S3-${aws_s3_bucket.assets.id}"
-    origin_access_control_id = aws_cloudfront_origin_access_control.assets.id
+    origin_access_control_id = aws_cloudfront_origin_access_control.assets[0].id
   }
 
   default_cache_behavior {
@@ -103,16 +119,17 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
-# S3 Bucket Policy for CloudFront
-resource "aws_s3_bucket_policy" "assets" {
+# S3 Bucket Policy for CloudFront (when enabled)
+resource "aws_s3_bucket_policy" "assets_cloudfront" {
+  count  = var.enable_cloudfront ? 1 : 0
   bucket = aws_s3_bucket.assets.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowCloudFrontServicePrincipal"
-        Effect    = "Allow"
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }
@@ -120,9 +137,28 @@ resource "aws_s3_bucket_policy" "assets" {
         Resource = "${aws_s3_bucket.assets.arn}/*"
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
+            "AWS:SourceArn" = aws_cloudfront_distribution.frontend[0].arn
           }
         }
+      }
+    ]
+  })
+}
+
+# S3 Bucket Policy for public access (when CloudFront is disabled)
+resource "aws_s3_bucket_policy" "assets_public" {
+  count  = var.enable_cloudfront ? 0 : 1
+  bucket = aws_s3_bucket.assets.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.assets.arn}/*"
       }
     ]
   })

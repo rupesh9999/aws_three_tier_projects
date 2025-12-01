@@ -14,14 +14,18 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.12"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   backend "s3" {
-    bucket         = "travelease-terraform-state"
-    key            = "infrastructure/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "terraform-state-lock"
+    bucket       = "ota-travel-terraform-state-863394984731"
+    key          = "infrastructure/terraform.tfstate"
+    region       = "us-east-2"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 

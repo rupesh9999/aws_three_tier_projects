@@ -239,6 +239,62 @@ ota-travel/
     └── (same structure)
 ```
 
+#### Automated Secrets Setup
+The secrets are automatically created by Terraform during infrastructure deployment. The following resources are created:
+
+| Secret Name | Description | Auto-Generated |
+|-------------|-------------|----------------|
+| `ota-travel/{env}/database` | Database credentials for all services | Yes |
+| `ota-travel/{env}/redis` | Redis connection details | Yes |
+| `ota-travel/{env}/jwt` | JWT signing secret (256-bit) | Yes |
+| `ota-travel/{env}/stripe` | Stripe API keys | No (provide your keys) |
+| `ota-travel/{env}/opensearch` | OpenSearch credentials | Yes |
+
+#### Manual Secrets Setup (Alternative)
+If you need to set up secrets manually before Terraform deployment, use the provided script:
+
+```bash
+# Run the interactive secrets setup script
+./scripts/setup-secrets.sh production
+
+# Or for staging environment
+./scripts/setup-secrets.sh staging
+```
+
+The script will:
+1. Check AWS CLI configuration
+2. Prompt for each credential (or auto-generate secure values)
+3. Create secrets in AWS Secrets Manager with proper tags
+4. Display a summary of created secrets
+
+#### Updating Stripe Keys
+After Terraform deployment, update the Stripe secret with your real API keys:
+
+```bash
+# Update Stripe secret with real keys
+aws secretsmanager update-secret \
+  --secret-id ota-travel/production/stripe \
+  --secret-string '{
+    "secret_key": "sk_live_your_real_key",
+    "webhook_secret": "whsec_your_real_webhook_secret",
+    "api_version": "2023-10-16"
+  }' \
+  --region us-east-2
+```
+
+#### Viewing Secrets
+```bash
+# List all secrets for the project
+aws secretsmanager list-secrets \
+  --filter Key=name,Values=ota-travel/production \
+  --region us-east-2
+
+# View a specific secret value
+aws secretsmanager get-secret-value \
+  --secret-id ota-travel/production/database \
+  --region us-east-2
+```
+
 ---
 
 ## Pre-deployment Checklist

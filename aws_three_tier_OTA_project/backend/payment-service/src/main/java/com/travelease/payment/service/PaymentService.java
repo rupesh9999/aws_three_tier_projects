@@ -107,7 +107,7 @@ public class PaymentService {
                 .map(PaymentResponse::fromEntity)
                 .toList();
 
-        return PageResponse.of(content, payments);
+        return PageResponse.of(content, payments.getTotalElements(), payments.getTotalPages(), page, size);
     }
 
     @Transactional

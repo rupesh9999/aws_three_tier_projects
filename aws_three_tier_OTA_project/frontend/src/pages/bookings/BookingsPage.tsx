@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Ticket, Clock, Filter, Loader2 } from 'lucide-react';
+import { Calendar, Ticket, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { bookingService } from '@/services/bookingService';

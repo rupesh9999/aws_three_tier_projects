@@ -19,9 +19,9 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-travel-production-frontend:latest
+          image: 863394984731.dkr.ecr.us-east-2.amazonaws.com/ota-production/frontend:latest
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           resources:
             requests:

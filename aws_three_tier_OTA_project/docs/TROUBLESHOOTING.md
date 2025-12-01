@@ -94,6 +94,122 @@ df -h
 
 ## Infrastructure Issues
 
+### EKS Add-on Issues
+
+#### EBS CSI Driver stuck in CREATING state / CrashLoopBackOff
+**Symptoms:**
+```
+Error: waiting for EKS Add-On (ota-production:aws-ebs-csi-driver) create: timeout while waiting for state to become 'ACTIVE'
+```
+
+Or controller pods in CrashLoopBackOff with error:
+```
+api error UnauthorizedOperation: You are not authorized to perform this operation
+```
+
+**Diagnosis:**
+```bash
+# Check addon status
+aws eks describe-addon --cluster-name ota-production --addon-name aws-ebs-csi-driver --region us-east-2
+
+# Check controller pod status
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+
+# Check pod logs
+kubectl logs -n kube-system -l app.kubernetes.io/component=csi-driver -c csi-provisioner --tail=50
+
+# Verify service account has correct IAM role annotation
+kubectl get sa ebs-csi-controller-sa -n kube-system -o yaml
+```
+
+**Root Cause:**
+The controller pods were created before the IRSA (IAM Role for Service Accounts) configuration was fully applied. The pods need to be restarted to pick up the IAM credentials from the service account.
+
+**Solution:**
+```bash
+# Restart the EBS CSI controller deployment to pick up IRSA credentials
+kubectl rollout restart deployment ebs-csi-controller -n kube-system
+
+# Wait for pods to be ready
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver -w
+
+# Verify addon is now ACTIVE
+aws eks describe-addon --cluster-name ota-production --addon-name aws-ebs-csi-driver --query 'addon.status'
+```
+
+**Terraform fix (if addon was tainted):**
+```bash
+# Untaint the addon to prevent recreation
+terraform untaint 'module.eks.aws_eks_addon.this["aws-ebs-csi-driver"]'
+```
+
+#### AWS Load Balancer Controller installation fails
+**Symptoms:**
+```
+Error: INSTALLATION FAILED: failed to create resource: Internal error occurred: failed calling webhook "vingress.elbv2.k8s.aws": Post "https://aws-load-balancer-webhook-service.kube-system.svc:443/validate-elbv2-k8s-aws-v1beta1-ingress/?timeout=10s": dial tcp: lookup aws-load-balancer-webhook-service.kube-system.svc on 10.100.0.10:53: no such host
+```
+
+Or controller pods fail with IAM permission errors:
+```
+AccessDenied: User: arn:aws:sts::123456789012:assumed-role/ota-production-aws-lb-controller-role/1234567890123456789 is not authorized to perform: elasticloadbalancing:DescribeLoadBalancers
+```
+
+**Diagnosis:**
+```bash
+# Check if the Helm release was installed
+helm list -n kube-system | grep aws-load-balancer-controller
+
+# Check controller pod status
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+
+# Check service account exists and has correct annotations
+kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+
+# Check IAM role exists
+aws iam get-role --role-name ota-production-aws-lb-controller-role --region us-east-2
+
+# Verify OIDC provider is configured
+aws eks describe-cluster --name ota-production --query 'cluster.identity.oidc.issuer' --region us-east-2
+```
+
+**Root Cause:**
+1. Service account name mismatch between IAM role trust policy and Helm chart
+2. IAM role ARN annotation incorrect
+3. Environment variables not set correctly (${EKS_CLUSTER_NAME}, ${AWS_ACCOUNT_ID})
+4. OIDC provider not properly configured
+
+**Solution:**
+```bash
+# Ensure environment variables are set
+export AWS_REGION=us-east-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export EKS_CLUSTER_NAME=ota-production
+
+# Uninstall and reinstall with correct parameters
+helm uninstall aws-load-balancer-controller -n kube-system
+
+helm repo add eks https://aws.github.io/eks-charts
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+    -n kube-system \
+    --set clusterName=${EKS_CLUSTER_NAME} \
+    --set region=${AWS_REGION} \
+    --set serviceAccount.create=true \
+    --set serviceAccount.name=aws-load-balancer-controller \
+    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::${AWS_ACCOUNT_ID}:role/ota-production-aws-lb-controller-role
+
+# Wait for controller to be ready
+kubectl wait --for=condition=available --timeout=300s deployment/aws-load-balancer-controller -n kube-system
+```
+
+**Verification:**
+```bash
+# Check controller pods are running
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+
+# Test with a sample ingress (should not get webhook errors)
+kubectl create ingress test-ingress --class=alb --rule="test.example.com/*=test-service:80" --dry-run=client -o yaml
+```
+
 ### EKS Node Issues
 
 #### Nodes not joining cluster

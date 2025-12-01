@@ -22,9 +22,10 @@ git clone https://github.com/your-org/ota-travel.git
 cd ota-travel
 
 # Set up environment
-export AWS_REGION=us-east-1
+export AWS_REGION=us-east-2
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export ENVIRONMENT=production
+export EKS_CLUSTER_NAME=ota-production
 
 # Deploy infrastructure
 cd infrastructure/terraform
@@ -32,7 +33,7 @@ terraform init
 terraform apply -auto-approve
 
 # Configure kubectl
-aws eks update-kubeconfig --name ota-travel-production --region $AWS_REGION
+aws eks update-kubeconfig --name ota-production --region $AWS_REGION
 
 # Deploy application
 kubectl apply -f ../kubernetes/
@@ -116,6 +117,10 @@ docker compose up --build
 # Configure AWS CLI
 aws configure
 
+# Set environment variables
+export AWS_REGION=us-east-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # Verify access
 aws sts get-caller-identity
 ```
@@ -124,6 +129,8 @@ aws sts get-caller-identity
 ```bash
 # Create S3 bucket for state
 aws s3 mb s3://ota-travel-terraform-state-${AWS_ACCOUNT_ID}
+
+make_bucket: ota-travel-terraform-state-863394984731
 
 # Create DynamoDB table for locking
 aws dynamodb create-table \
@@ -140,7 +147,7 @@ cd infrastructure/terraform
 # Initialize with backend
 terraform init \
     -backend-config="bucket=ota-travel-terraform-state-${AWS_ACCOUNT_ID}" \
-    -backend-config="key=production/terraform.tfstate" \
+    -backend-config="key=infrastructure/terraform.tfstate" \
     -backend-config="region=${AWS_REGION}" \
     -backend-config="dynamodb_table=ota-travel-terraform-locks"
 ```
@@ -149,15 +156,15 @@ terraform init \
 ```bash
 # Create terraform.tfvars
 cat > terraform.tfvars <<EOF
-aws_region    = "us-east-1"
+aws_region    = "us-east-2"
 environment   = "production"
-project_name  = "ota-travel"
+project_name  = "ota"
 
 vpc_cidr             = "10.0.0.0/16"
 enable_nat_gateway   = true
 single_nat_gateway   = false
 
-eks_cluster_version        = "1.29"
+eks_cluster_version        = "1.32"
 eks_node_instance_types    = ["t3.medium"]
 eks_node_desired_size      = 3
 eks_node_min_size          = 2
@@ -189,9 +196,34 @@ terraform output -json > ../outputs.json
 
 # Get specific values
 export EKS_CLUSTER_NAME=$(terraform output -raw eks_cluster_name)
-export RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
-export REDIS_ENDPOINT=$(terraform output -raw elasticache_endpoint)
+export REDIS_ENDPOINT=$(terraform output -raw redis_endpoint)
+export OPENSEARCH_ENDPOINT=$(terraform output -raw opensearch_endpoint)
+export S3_BUCKET=$(terraform output -raw s3_bucket_name)
+export API_GATEWAY_URL=$(terraform output -raw api_gateway_url)
+
+# RDS endpoints are per-service (auth, search, booking, payment)
+terraform output rds_endpoints
 ```
+
+### Step 6: Verify EKS Add-ons
+After infrastructure deployment, verify that all EKS add-ons are healthy:
+
+```bash
+# Configure kubectl
+aws eks update-kubeconfig --name ota-production --region us-east-2
+
+# Check add-on status
+aws eks list-addons --cluster-name ota-production
+aws eks describe-addon --cluster-name ota-production --addon-name aws-ebs-csi-driver --query 'addon.status'
+
+# Verify EBS CSI driver pods are running
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+
+# If EBS CSI controller pods are in CrashLoopBackOff, restart them:
+kubectl rollout restart deployment ebs-csi-controller -n kube-system
+```
+
+> **Note:** If the EBS CSI driver shows CREATING status for more than 10 minutes, or controller pods are crashing, see the [Troubleshooting Guide](TROUBLESHOOTING.md#ebs-csi-driver-stuck-in-creating-state--crashloopbackoff) for resolution steps.
 
 ---
 
@@ -200,7 +232,7 @@ export REDIS_ENDPOINT=$(terraform output -raw elasticache_endpoint)
 ### Step 1: Configure kubectl
 ```bash
 aws eks update-kubeconfig \
-    --name ota-travel-production \
+    --name ota-production \
     --region ${AWS_REGION}
 
 # Verify connection
@@ -208,53 +240,47 @@ kubectl cluster-info
 kubectl get nodes
 ```
 
-### Step 2: Create Secrets in AWS Secrets Manager
+### Step 2: Verify Secrets in AWS Secrets Manager
+Secrets are automatically created by Terraform. Verify they exist:
+
 ```bash
-# Database credentials
-aws secretsmanager create-secret \
-    --name ota-travel/production/database \
-    --secret-string '{
-        "host": "'${RDS_ENDPOINT}'",
-        "port": "5432",
-        "dbname": "otatravel",
-        "username": "admin",
-        "password": "'$(openssl rand -base64 24)'"
-    }'
+# List all secrets for this project
+aws secretsmanager list-secrets --filter Key=name,Values=ota/production --region us-east-2
 
-# JWT secret
-aws secretsmanager create-secret \
-    --name ota-travel/production/jwt \
-    --secret-string '{
-        "secret": "'$(openssl rand -base64 32)'"
-    }'
+# The following secrets should exist:
+# - ota/production/database  (DB credentials for all services)
+# - ota/production/redis     (Redis connection info)
+# - ota/production/jwt       (JWT signing secret)
+# - ota/production/stripe    (Stripe API keys - update with real values)
+# - ota/production/opensearch (OpenSearch credentials)
 
-# Redis credentials
-aws secretsmanager create-secret \
-    --name ota-travel/production/redis \
+# To update Stripe credentials with real values:
+aws secretsmanager update-secret \
+    --secret-id ota/production/stripe \
     --secret-string '{
-        "host": "'${REDIS_ENDPOINT}'",
-        "port": "6379",
-        "password": ""
-    }'
-
-# Stripe credentials (replace with actual keys)
-aws secretsmanager create-secret \
-    --name ota-travel/production/stripe \
-    --secret-string '{
-        "secret_key": "sk_test_xxxxx",
-        "webhook_secret": "whsec_xxxxx"
-    }'
+        "secret_key": "sk_live_xxxxx",
+        "webhook_secret": "whsec_xxxxx",
+        "api_version": "2023-10-16"
+    }' \
+    --region us-east-2
 ```
 
 ### Step 3: Install Cluster Add-ons
 ```bash
+# Ensure environment variables are set for add-on installation
+export AWS_REGION=us-east-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export EKS_CLUSTER_NAME=ota-production
+
 # Install AWS Load Balancer Controller
 helm repo add eks https://aws.github.io/eks-charts
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
     -n kube-system \
     --set clusterName=${EKS_CLUSTER_NAME} \
+    --set region=${AWS_REGION} \
     --set serviceAccount.create=true \
-    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::${AWS_ACCOUNT_ID}:role/ota-travel-production-aws-lb-controller-role
+    --set serviceAccount.name=aws-load-balancer-controller \
+    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::${AWS_ACCOUNT_ID}:role/ota-production-aws-lb-controller-role
 
 # Install External Secrets Operator
 helm repo add external-secrets https://charts.external-secrets.io
@@ -265,7 +291,21 @@ helm install external-secrets external-secrets/external-secrets \
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
-### Step 4: Build and Push Docker Images
+### Step 4: Build Applications
+```bash
+# Build frontend
+cd frontend
+npm install
+npm run build
+cd ..
+
+# Build backend services
+cd backend
+mvn clean package -DskipTests
+cd ..
+```
+
+### Step 5: Build and Push Docker Images
 ```bash
 # Login to ECR
 aws ecr get-login-password --region ${AWS_REGION} | \
@@ -279,14 +319,24 @@ for service in frontend auth-service search-service booking-service payment-serv
         CONTEXT_PATH="backend/${service}"
     fi
     
-    IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-travel-production-${service}"
+    IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-production/${service}"
+    
+# Build and push all services
+for service in frontend auth-service search-service booking-service payment-service cart-service; do
+    if [ "$service" == "frontend" ]; then
+        CONTEXT_PATH="frontend"
+    else
+        CONTEXT_PATH="backend/${service}"
+    fi
+    
+    IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-production/${service}"
     
     docker build -t ${IMAGE_NAME}:latest -f ${CONTEXT_PATH}/Dockerfile ${CONTEXT_PATH}
     docker push ${IMAGE_NAME}:latest
 done
 ```
 
-### Step 5: Deploy Kubernetes Resources
+### Step 6: Deploy Kubernetes Resources
 ```bash
 cd infrastructure/kubernetes
 
@@ -418,13 +468,13 @@ kubectl get pods -n production -w
 kubectl get endpoints -n production
 
 # Check ingress status
-kubectl describe ingress ota-travel-ingress -n production
+kubectl describe ingress ota-ingress -n production
 ```
 
 ### API Tests
 ```bash
 # Get ALB DNS name
-ALB_DNS=$(kubectl get ingress ota-travel-ingress -n production -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+ALB_DNS=$(kubectl get ingress ota-ingress -n production -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 # Test health endpoints
 curl -s https://${ALB_DNS}/api/v1/auth/actuator/health | jq
@@ -461,12 +511,15 @@ kubectl delete -f infrastructure/kubernetes/
 cd infrastructure/terraform
 terraform destroy -auto-approve
 
+# Note: The S3 bucket name used for state is configured in main.tf backend block
+# Current bucket: ota-travel-terraform-state-863394984731
 # Delete S3 bucket (empty first)
 aws s3 rm s3://ota-travel-terraform-state-${AWS_ACCOUNT_ID} --recursive
 aws s3 rb s3://ota-travel-terraform-state-${AWS_ACCOUNT_ID}
 
-# Delete DynamoDB table
-aws dynamodb delete-table --table-name ota-travel-terraform-locks
+# Note: DynamoDB locking is deprecated - using S3 native locking instead
+# If you have an old DynamoDB table, delete it:
+# aws dynamodb delete-table --table-name ota-travel-terraform-locks
 ```
 
 ---

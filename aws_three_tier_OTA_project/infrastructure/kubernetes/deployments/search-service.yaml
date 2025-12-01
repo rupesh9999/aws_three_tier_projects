@@ -24,7 +24,7 @@ spec:
       serviceAccountName: search-service
       containers:
         - name: search-service
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-travel-production-search-service:latest
+          image: 863394984731.dkr.ecr.us-east-2.amazonaws.com/ota-production/search-service:latest
           ports:
             - containerPort: 8080
               name: http
@@ -36,38 +36,38 @@ spec:
             - configMapRef:
                 name: search-service-config
           env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: search-database-credentials
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: search-database-credentials
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: search-database-credentials
+                  key: DB_NAME
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=require"
+              value: "jdbc:postgresql://$(DB_HOST)/$(DB_NAME)?sslmode=require"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: database-credentials
+                  name: search-database-credentials
                   key: DB_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-credentials
+                  name: search-database-credentials
                   key: DB_PASSWORD
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: jwt-secrets
                   key: JWT_SECRET
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_PORT
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_NAME
             - name: OPENSEARCH_HOST
               valueFrom:
                 secretKeyRef:

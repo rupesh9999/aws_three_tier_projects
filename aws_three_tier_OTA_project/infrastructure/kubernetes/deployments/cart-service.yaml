@@ -24,7 +24,7 @@ spec:
       serviceAccountName: cart-service
       containers:
         - name: cart-service
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-travel-production-cart-service:latest
+          image: 863394984731.dkr.ecr.us-east-2.amazonaws.com/ota-production/cart-service:latest
           ports:
             - containerPort: 8080
               name: http

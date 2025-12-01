@@ -25,13 +25,13 @@ resource "aws_security_group" "rds" {
 
 # RDS Instance - Auth Service
 resource "aws_db_instance" "auth" {
-  identifier           = "${var.project_name}-${var.environment}-auth"
-  engine               = "postgres"
-  engine_version       = "16.1"
-  instance_class       = var.db_instance_class
-  allocated_storage    = var.db_allocated_storage
-  storage_type         = "gp3"
-  storage_encrypted    = true
+  identifier        = "${var.project_name}-${var.environment}-auth"
+  engine            = "postgres"
+  engine_version    = "16.6"
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  storage_type      = "gp3"
+  storage_encrypted = true
 
   db_name  = "travelease_auth"
   username = var.db_username
@@ -40,14 +40,14 @@ resource "aws_db_instance" "auth" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  multi_az               = var.environment == "prod"
-  publicly_accessible    = false
-  skip_final_snapshot    = var.environment != "prod"
-  deletion_protection    = var.environment == "prod"
+  multi_az            = var.environment == "prod"
+  publicly_accessible = false
+  skip_final_snapshot = var.environment != "prod"
+  deletion_protection = var.environment == "prod"
 
   backup_retention_period = var.environment == "prod" ? 7 : 1
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "sun:04:00-sun:05:00"
 
   performance_insights_enabled = var.environment == "prod"
 
@@ -59,13 +59,13 @@ resource "aws_db_instance" "auth" {
 
 # RDS Instance - Search Service
 resource "aws_db_instance" "search" {
-  identifier           = "${var.project_name}-${var.environment}-search"
-  engine               = "postgres"
-  engine_version       = "16.1"
-  instance_class       = var.db_instance_class
-  allocated_storage    = var.db_allocated_storage
-  storage_type         = "gp3"
-  storage_encrypted    = true
+  identifier        = "${var.project_name}-${var.environment}-search"
+  engine            = "postgres"
+  engine_version    = "16.6"
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  storage_type      = "gp3"
+  storage_encrypted = true
 
   db_name  = "travelease_search"
   username = var.db_username
@@ -74,10 +74,10 @@ resource "aws_db_instance" "search" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  multi_az               = var.environment == "prod"
-  publicly_accessible    = false
-  skip_final_snapshot    = var.environment != "prod"
-  deletion_protection    = var.environment == "prod"
+  multi_az            = var.environment == "prod"
+  publicly_accessible = false
+  skip_final_snapshot = var.environment != "prod"
+  deletion_protection = var.environment == "prod"
 
   backup_retention_period = var.environment == "prod" ? 7 : 1
 
@@ -89,13 +89,13 @@ resource "aws_db_instance" "search" {
 
 # RDS Instance - Booking Service
 resource "aws_db_instance" "booking" {
-  identifier           = "${var.project_name}-${var.environment}-booking"
-  engine               = "postgres"
-  engine_version       = "16.1"
-  instance_class       = var.db_instance_class
-  allocated_storage    = var.db_allocated_storage
-  storage_type         = "gp3"
-  storage_encrypted    = true
+  identifier        = "${var.project_name}-${var.environment}-booking"
+  engine            = "postgres"
+  engine_version    = "16.6"
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  storage_type      = "gp3"
+  storage_encrypted = true
 
   db_name  = "travelease_booking"
   username = var.db_username
@@ -104,10 +104,10 @@ resource "aws_db_instance" "booking" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  multi_az               = var.environment == "prod"
-  publicly_accessible    = false
-  skip_final_snapshot    = var.environment != "prod"
-  deletion_protection    = var.environment == "prod"
+  multi_az            = var.environment == "prod"
+  publicly_accessible = false
+  skip_final_snapshot = var.environment != "prod"
+  deletion_protection = var.environment == "prod"
 
   backup_retention_period = var.environment == "prod" ? 7 : 1
 
@@ -119,13 +119,13 @@ resource "aws_db_instance" "booking" {
 
 # RDS Instance - Payment Service
 resource "aws_db_instance" "payment" {
-  identifier           = "${var.project_name}-${var.environment}-payment"
-  engine               = "postgres"
-  engine_version       = "16.1"
-  instance_class       = var.db_instance_class
-  allocated_storage    = var.db_allocated_storage
-  storage_type         = "gp3"
-  storage_encrypted    = true
+  identifier        = "${var.project_name}-${var.environment}-payment"
+  engine            = "postgres"
+  engine_version    = "16.6"
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  storage_type      = "gp3"
+  storage_encrypted = true
 
   db_name  = "travelease_payment"
   username = var.db_username
@@ -134,10 +134,10 @@ resource "aws_db_instance" "payment" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  multi_az               = var.environment == "prod"
-  publicly_accessible    = false
-  skip_final_snapshot    = var.environment != "prod"
-  deletion_protection    = var.environment == "prod"
+  multi_az            = var.environment == "prod"
+  publicly_accessible = false
+  skip_final_snapshot = var.environment != "prod"
+  deletion_protection = var.environment == "prod"
 
   backup_retention_period = var.environment == "prod" ? 7 : 1
 

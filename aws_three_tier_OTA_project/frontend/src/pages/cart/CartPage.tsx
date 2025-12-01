@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Trash2, Plus, Minus, Loader2 } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useCartStore } from '@/store/cartStore';

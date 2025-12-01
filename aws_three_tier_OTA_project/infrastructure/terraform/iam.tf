@@ -247,7 +247,7 @@ resource "aws_iam_role_policy" "search_service" {
           "es:ESHttpDelete"
         ]
         Resource = [
-          "${aws_opensearch_domain.main.arn}/*"
+          "${aws_opensearch_domain.search.arn}/*"
         ]
       },
       {
@@ -306,7 +306,7 @@ resource "aws_iam_role_policy" "cart_service" {
           "elasticache:Connect"
         ]
         Resource = [
-          aws_elasticache_replication_group.redis.arn
+          aws_elasticache_cluster.redis.arn
         ]
       },
       {
@@ -411,4 +411,38 @@ resource "aws_iam_role_policy" "external_dns" {
       }
     ]
   })
+}
+
+# IAM Role for EBS CSI Driver
+resource "aws_iam_role" "ebs_csi_driver" {
+  name = "${var.project_name}-${var.environment}-ebs-csi-driver"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = module.eks.oidc_provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-ebs-csi-driver"
+  }
+}
+
+# Attach AWS managed policy for EBS CSI Driver
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi_driver.name
 }

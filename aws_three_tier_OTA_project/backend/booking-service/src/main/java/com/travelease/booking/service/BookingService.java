@@ -96,7 +96,7 @@ public class BookingService {
                 .map(BookingResponse::fromEntity)
                 .toList();
 
-        return PageResponse.of(content, bookings);
+        return PageResponse.of(content, bookings.getTotalElements(), bookings.getTotalPages(), page, size);
     }
 
     @Transactional(readOnly = true)

@@ -24,7 +24,7 @@ spec:
       serviceAccountName: payment-service
       containers:
         - name: payment-service
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/ota-travel-production-payment-service:latest
+          image: 863394984731.dkr.ecr.us-east-2.amazonaws.com/ota-production/payment-service:latest
           ports:
             - containerPort: 8080
               name: http
@@ -36,38 +36,38 @@ spec:
             - configMapRef:
                 name: payment-service-config
           env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: payment-database-credentials
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: payment-database-credentials
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: payment-database-credentials
+                  key: DB_NAME
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=require"
+              value: "jdbc:postgresql://$(DB_HOST)/$(DB_NAME)?sslmode=require"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: database-credentials
+                  name: payment-database-credentials
                   key: DB_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-credentials
+                  name: payment-database-credentials
                   key: DB_PASSWORD
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: jwt-secrets
                   key: JWT_SECRET
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_PORT
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: database-credentials
-                  key: DB_NAME
             - name: STRIPE_SECRET_KEY
               valueFrom:
                 secretKeyRef:

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -138,13 +139,13 @@ public class AuthService {
     }
 
     private AuthResponse generateAuthResponse(User user) {
-        String accessToken = jwtTokenProvider.generateToken(user.getId().toString(), user.getEmail());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId().toString());
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId().toString(), user.getEmail(), Map.of());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId().toString(), user.getEmail());
 
         return AuthResponse.of(
                 accessToken,
                 refreshToken,
-                jwtTokenProvider.getAccessTokenExpirationMs(),
+                jwtTokenProvider.getAccessTokenExpiration(),
                 UserResponse.fromEntity(user)
         );
     }

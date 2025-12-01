@@ -28,7 +28,7 @@ resource "aws_elasticache_cluster" "redis" {
   cluster_id           = "${var.project_name}-${var.environment}-redis"
   engine               = "redis"
   engine_version       = "7.1"
-  node_type            = var.redis_node_type
+  node_type            = var.elasticache_node_type
   num_cache_nodes      = 1
   parameter_group_name = "default.redis7"
   port                 = 6379
@@ -68,8 +68,22 @@ resource "aws_security_group" "opensearch" {
   }
 }
 
+# Service-linked role for OpenSearch VPC access
+# This resource will only be created if the SLR doesn't already exist
+resource "aws_iam_service_linked_role" "opensearch" {
+  count            = length(data.aws_iam_roles.opensearch_slr.names) == 0 ? 1 : 0
+  aws_service_name = "opensearchservice.amazonaws.com"
+  description      = "Service-linked role for OpenSearch VPC access"
+}
+
+# Check if OpenSearch SLR already exists
+data "aws_iam_roles" "opensearch_slr" {
+  name_regex = "AWSServiceRoleForAmazonOpenSearchService"
+}
+
 # OpenSearch Domain
 resource "aws_opensearch_domain" "search" {
+  depends_on     = [aws_iam_service_linked_role.opensearch]
   domain_name    = "${var.project_name}-${var.environment}"
   engine_version = "OpenSearch_2.11"
 
