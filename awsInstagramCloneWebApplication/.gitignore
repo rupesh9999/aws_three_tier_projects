@@ -6,6 +6,10 @@ target/
 *.zip
 *.tar.gz
 *.rar
+*.jar.original
+
+# maven
+target/
 
 # Node/Frontend
 node_modules/
@@ -128,4 +132,5 @@ kubeconfig
 # Helm
 charts/*/charts/
 *.tgz
+
 

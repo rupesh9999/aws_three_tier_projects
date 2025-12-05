@@ -1,5 +1,0 @@
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/feed-service/src/main/java/com/instagram/feed/FeedServiceApplication.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/feed-service/src/main/java/com/instagram/feed/config/RedisConfig.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/feed-service/src/main/java/com/instagram/feed/controller/FeedController.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/feed-service/src/main/java/com/instagram/feed/dto/FeedDto.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/feed-service/src/main/java/com/instagram/feed/service/FeedService.java

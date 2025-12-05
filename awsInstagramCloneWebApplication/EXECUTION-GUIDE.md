@@ -129,7 +129,7 @@ for service in "${SERVICES[@]}"; do
   REPO_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$service"
   
   # Create repo if not exists (Terraform should have done this, but safe check)
-  aws ecr describe-repositories --repository-names $service || aws ecr create-repository --repository-name $service
+  aws ecr describe-repositories --repository-names $service >/dev/null 2>&1 || aws ecr create-repository --repository-name $service
 
   docker build -t $REPO_URI:latest -f $service/Dockerfile $service
   docker push $REPO_URI:latest
@@ -170,15 +170,91 @@ kubectl -n instagram-clone create secret generic app-secrets \
   --from-literal=AWS_ACCESS_KEY_ID="<YOUR_ACCESS_KEY>" \
   --from-literal=AWS_SECRET_ACCESS_KEY="<YOUR_SECRET_KEY>"
 ```
+ 
 
-### 4.3 Install External Secrets Operator (Optional but Recommended)
+### 4.3 Install External Secrets Operator (With IRSA)
 If using AWS Secrets Manager (as per design):
 ```bash
+# Export the IAM Role ARN created by Terraform
+export EXTERNAL_SECRETS_ROLE_ARN=$(terraform output -raw external_secrets_role_arn)
+
 helm repo add external-secrets https://charts.external-secrets.io
-helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
+# Uninstall if previously installed to ensure CRDs are applied cleanly
+helm uninstall external-secrets -n external-secrets || true
+
+helm install external-secrets external-secrets/external-secrets \
+  -n external-secrets --create-namespace \
+  --set installCRDs=true \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$EXTERNAL_SECRETS_ROLE_ARN \
+  --set serviceAccount.name=external-secrets-sa
+
+# Wait for pods to be ready
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=external-secrets -n external-secrets --timeout=300s
 ```
 
-### 4.4 Deploy Application via Argo CD
+### 4.4 Configure ClusterSecretStore (AWS Secrets Manager)
+
+Create a `ClusterSecretStore` to tell the operator how to access AWS Secrets Manager.
+
+**File:** `k8s/secrets/cluster-secret-store.yaml`
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: aws-secrets-manager
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: us-east-1
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: external-secrets-sa
+            namespace: external-secrets
+```
+
+**Apply the configuration:**
+```bash
+kubectl apply -f k8s/secrets/cluster-secret-store.yaml
+```
+
+### 4.5 Sync Database Credentials
+
+Create an `ExternalSecret` to sync the RDS password from AWS Secrets Manager to a Kubernetes Secret.
+
+**File:** `k8s/secrets/db-credentials.yaml`
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: db-credentials
+  namespace: instagram-clone
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: ClusterSecretStore
+  target:
+    name: app-secrets
+    creationPolicy: Merge
+  data:
+    - secretKey: SPRING_DATASOURCE_PASSWORD
+      remoteRef:
+        key: instagram-clone/prod/db-password
+        property: password
+```
+
+**Apply the configuration:**
+```bash
+kubectl apply -f k8s/secrets/db-credentials.yaml
+
+# Verify secret creation
+kubectl get secret app-secrets -n instagram-clone
+```
+```
+
+### 4.6 Deploy Application via Argo CD
 
 ```bash
 # Install Argo CD

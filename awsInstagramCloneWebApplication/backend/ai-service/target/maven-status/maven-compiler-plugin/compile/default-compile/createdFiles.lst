@@ -1,8 +1,0 @@
-com/instagram/ai/dto/AiDto.class
-com/instagram/ai/dto/AiDto$CaptionRequest.class
-com/instagram/ai/controller/ContentGenerationController.class
-com/instagram/ai/AiServiceApplication.class
-com/instagram/ai/service/ContentGenerationService.class
-com/instagram/ai/dto/AiDto$GenerationResponse.class
-com/instagram/ai/dto/AiDto$CaptionRequest$CaptionRequestBuilder.class
-com/instagram/ai/dto/AiDto$GenerationResponse$GenerationResponseBuilder.class

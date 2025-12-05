@@ -1,9 +1,0 @@
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/AuthServiceApplication.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/config/SecurityConfig.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/controller/AuthenticationController.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/dto/AuthDto.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/entity/Role.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/entity/User.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/repository/UserRepository.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/service/AuthenticationService.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/auth-service/src/main/java/com/instagram/auth/service/JwtService.java

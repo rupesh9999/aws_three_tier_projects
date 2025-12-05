@@ -1,6 +1,0 @@
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/PostServiceApplication.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/controller/PostController.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/dto/PostDto.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/entity/Post.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/repository/PostRepository.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/post-service/src/main/java/com/instagram/post/service/PostService.java

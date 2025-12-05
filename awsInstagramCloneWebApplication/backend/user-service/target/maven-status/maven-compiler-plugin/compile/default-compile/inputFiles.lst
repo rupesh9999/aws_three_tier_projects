@@ -1,8 +1,0 @@
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/UserServiceApplication.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/controller/UserController.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/dto/UserDto.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/entity/Follow.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/entity/UserProfile.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/repository/FollowRepository.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/repository/UserProfileRepository.java
-/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/user-service/src/main/java/com/instagram/user/service/UserService.java

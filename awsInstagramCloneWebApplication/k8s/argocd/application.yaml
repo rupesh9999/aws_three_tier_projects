@@ -12,7 +12,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/auth-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/auth-service
         - name: service.port
           value: "8081"
         - name: env.SPRING_DATASOURCE_URL
@@ -39,7 +39,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/user-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/user-service
         - name: service.port
           value: "8082"
         - name: env.SPRING_DATASOURCE_URL
@@ -66,7 +66,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/post-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/post-service
         - name: service.port
           value: "8083"
         - name: env.SPRING_DATASOURCE_URL
@@ -93,7 +93,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/feed-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/feed-service
         - name: service.port
           value: "8084"
         - name: env.SPRING_DATA_REDIS_HOST
@@ -120,7 +120,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/notification-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/notification-service
         - name: service.port
           value: "8085"
         - name: env.SPRING_DATASOURCE_URL
@@ -147,7 +147,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/ai-service
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/ai-service
         - name: service.port
           value: "8086"
   destination:
@@ -172,7 +172,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/api-gateway
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/api-gateway
         - name: service.port
           value: "8080"
         - name: env.AUTH_SERVICE_URL
@@ -209,7 +209,7 @@ spec:
     helm:
       parameters:
         - name: image.repository
-          value: your-docker-registry/frontend
+          value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/frontend
         - name: env.VITE_API_URL
           value: "http://api-gateway:8080" # In real prod, this should be the Ingress URL
   destination:
