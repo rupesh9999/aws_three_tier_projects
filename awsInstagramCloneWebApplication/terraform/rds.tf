@@ -1,6 +1,6 @@
 module "db" {
   source  = "terraform-aws-modules/rds/aws"
-  version = "6.3.0"
+  version = "~> 6.0"
 
   identifier = "${var.project_name}-db"
 
@@ -31,7 +31,7 @@ module "db" {
 
 module "security_group_db" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.1.0"
+  version = "~> 5.0"
 
   name        = "${var.project_name}-db-sg"
   description = "Security group for RDS"

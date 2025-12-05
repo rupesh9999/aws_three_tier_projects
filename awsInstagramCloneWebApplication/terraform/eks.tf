@@ -1,6 +1,6 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.15.3"
+  version = "~> 20.0"
 
   cluster_name    = "${var.project_name}-cluster"
   cluster_version = "1.29"
@@ -21,6 +21,9 @@ module "eks" {
       capacity_type  = "ON_DEMAND"
     }
   }
+
+  # v20 defaults to using Access Entries, disabling legacy aws-auth
+  enable_cluster_creator_admin_permissions = true
 
   tags = var.tags
 }

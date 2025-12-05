@@ -33,7 +33,7 @@ resource "aws_s3_bucket_policy" "media_bucket" {
   depends_on = [aws_s3_bucket_public_access_block.media_bucket]
 }
 
-resource "aws_s3_bucket_cors" "media_bucket" {
+resource "aws_s3_bucket_cors_configuration" "media_bucket" {
   bucket = aws_s3_bucket.media_bucket.id
 
   cors_rule {

@@ -1,7 +1,7 @@
 # IRSA for Post Service (S3 Access)
 module "iam_assumable_role_post_service" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "5.30.0"
+  version = "~> 5.0"
 
   create_role = true
 
