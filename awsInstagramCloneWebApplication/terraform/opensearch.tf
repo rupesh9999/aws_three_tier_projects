@@ -17,9 +17,16 @@ resource "aws_opensearch_domain" "opensearch" {
     Statement = [
       {
         Action = "es:*"
-        Principal = "*"
+        Principal = {
+          AWS = "*"
+        }
         Effect = "Allow"
         Resource = "arn:aws:es:${var.region}:*:domain/${var.project_name}-logs/*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
       }
     ]
   })
