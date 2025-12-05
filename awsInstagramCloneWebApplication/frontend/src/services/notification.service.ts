@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getCurrentUser } from './auth.service';
 
-const API_URL = 'http://localhost:8080/api/v1/notifications';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/notifications`;
 
 export interface Notification {
     id: number;

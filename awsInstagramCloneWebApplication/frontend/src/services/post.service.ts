@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getCurrentUser } from './auth.service';
 
-const API_URL = 'http://localhost:8080/api/v1/posts';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/posts`;
 
 export const createPost = async (caption: string, imageFile: File) => {
     const user = getCurrentUser();

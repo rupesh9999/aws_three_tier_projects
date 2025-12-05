@@ -3,7 +3,7 @@ spring:
     name: feed-service
   data:
     redis:
-      host: localhost
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: 6379
 
 server:

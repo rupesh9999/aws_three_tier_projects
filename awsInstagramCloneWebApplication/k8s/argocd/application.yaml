@@ -1,14 +1,192 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: backend-services
+  name: auth-service
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git # Placeholder, needs actual repo
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
     targetRevision: HEAD
     path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/auth-service
+        - name: service.port
+          value: "8081"
+        - name: env.SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/users_db"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: user-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/user-service
+        - name: service.port
+          value: "8082"
+        - name: env.SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/users_db"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: post-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/post-service
+        - name: service.port
+          value: "8083"
+        - name: env.SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/posts_db"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: feed-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/feed-service
+        - name: service.port
+          value: "8084"
+        - name: env.SPRING_DATA_REDIS_HOST
+          value: "redis-service"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notification-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/notification-service
+        - name: service.port
+          value: "8085"
+        - name: env.SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/notifications_db"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/ai-service
+        - name: service.port
+          value: "8086"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-gateway
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/api-gateway
+        - name: service.port
+          value: "8080"
+        - name: env.AUTH_SERVICE_URL
+          value: "http://auth-service:8081"
+        - name: env.USER_SERVICE_URL
+          value: "http://user-service:8082"
+        - name: env.POST_SERVICE_URL
+          value: "http://post-service:8083"
+        - name: env.FEED_SERVICE_URL
+          value: "http://feed-service:8084"
+        - name: env.NOTIFICATION_SERVICE_URL
+          value: "http://notification-service:8085"
+        - name: env.AI_SERVICE_URL
+          value: "http://ai-service:8086"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -25,9 +203,15 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git # Placeholder, needs actual repo
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git
     targetRevision: HEAD
     path: awsInstagramCloneWebApplication/k8s/helm/frontend
+    helm:
+      parameters:
+        - name: image.repository
+          value: your-docker-registry/frontend
+        - name: env.VITE_API_URL
+          value: "http://api-gateway:8080" # In real prod, this should be the Ingress URL
   destination:
     server: https://kubernetes.default.svc
     namespace: default

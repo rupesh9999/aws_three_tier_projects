@@ -4,8 +4,25 @@
 - `kubectl` installed and configured with **Cluster Admin** permissions.
 - `helm` installed.
 - `argocd` CLI installed (optional, but recommended).
+- `terraform` installed.
 
-## 1. Install Argo CD
+## 0. Documentation & Design
+Detailed design documents are available in the `docs/` directory:
+- [Architecture](docs/architecture.md)
+- [API Specifications](docs/api-spec.md)
+- [Database Schema](docs/database-schema.md)
+
+## 1. Infrastructure Setup (Terraform)
+We use Terraform to provision the AWS infrastructure (RDS, ElastiCache, S3, OpenSearch, ECR, IAM).
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+This will output the resource endpoints (RDS, Redis, etc.) which you can use to configure your application if running locally or update the Helm values.
+
+## 2. Install Argo CD
 Since the current user does not have permission to create namespaces, an admin must run the following:
 
 ```bash
@@ -82,3 +99,20 @@ helm install fluent-bit fluent/fluent-bit -n logging
 
 ### Configure Output
 By default, Fluent Bit logs to stdout. To configure it for OpenSearch, you would update the `values.yaml` to point to your OpenSearch endpoint.
+
+## 8. Secrets Management
+We use External Secrets Operator to sync secrets from AWS Secrets Manager.
+
+### Install External Secrets Operator
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+kubectl create namespace external-secrets
+helm install external-secrets external-secrets/external-secrets -n external-secrets
+```
+
+### Apply Secrets Manifests
+```bash
+kubectl apply -f k8s/secrets/cluster-secret-store.yaml
+kubectl apply -f k8s/secrets/db-credentials.yaml
+```

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getCurrentUser } from './auth.service';
 
-const API_URL = 'http://localhost:8080/api/v1/feed';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/feed`;
 
 export interface PostSummary {
     id: number;
