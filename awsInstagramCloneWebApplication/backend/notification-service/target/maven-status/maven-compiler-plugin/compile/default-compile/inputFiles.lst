@@ -1,0 +1,6 @@
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/NotificationServiceApplication.java
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/consumer/NotificationConsumer.java
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/controller/NotificationController.java
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/entity/Notification.java
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/repository/NotificationRepository.java
+/home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication/backend/notification-service/src/main/java/com/instagram/notification/service/NotificationService.java

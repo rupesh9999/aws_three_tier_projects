@@ -1,0 +1,150 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = 'your-docker-registry' // e.g., account_id.dkr.ecr.region.amazonaws.com
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Test Backend') {
+            parallel {
+                stage('Auth Service') {
+                    steps {
+                        dir('backend/auth-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('User Service') {
+                    steps {
+                        dir('backend/user-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('Post Service') {
+                    steps {
+                        dir('backend/post-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('Feed Service') {
+                    steps {
+                        dir('backend/feed-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('Notification Service') {
+                    steps {
+                        dir('backend/notification-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('AI Service') {
+                    steps {
+                        dir('backend/ai-service') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+                stage('API Gateway') {
+                    steps {
+                        dir('backend/api-gateway') {
+                            sh 'mvn clean package'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build & Test Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                    // sh 'npm test' // Uncomment when tests are added
+                }
+            }
+        }
+
+        stage('Docker Build & Push') {
+            when {
+                expression { return env.DOCKER_REGISTRY != 'your-docker-registry' }
+            }
+            parallel {
+                stage('Push Auth') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/auth-service:${IMAGE_TAG}", "backend/auth-service").push()
+                        }
+                    }
+                }
+                stage('Push User') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/user-service:${IMAGE_TAG}", "backend/user-service").push()
+                        }
+                    }
+                }
+                stage('Push Post') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/post-service:${IMAGE_TAG}", "backend/post-service").push()
+                        }
+                    }
+                }
+                stage('Push Feed') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/feed-service:${IMAGE_TAG}", "backend/feed-service").push()
+                        }
+                    }
+                }
+                stage('Push Notification') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/notification-service:${IMAGE_TAG}", "backend/notification-service").push()
+                        }
+                    }
+                }
+                stage('Push AI') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/ai-service:${IMAGE_TAG}", "backend/ai-service").push()
+                        }
+                    }
+                }
+                stage('Push Gateway') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/api-gateway:${IMAGE_TAG}", "backend/api-gateway").push()
+                        }
+                    }
+                }
+                stage('Push Frontend') {
+                    steps {
+                        script {
+                            docker.build("${DOCKER_REGISTRY}/frontend:${IMAGE_TAG}", "frontend").push()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}

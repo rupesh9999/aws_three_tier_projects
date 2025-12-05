@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backend-services
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git # Placeholder, needs actual repo
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/backend-service
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rupesh9999/aws_three_tier_projects.git # Placeholder, needs actual repo
+    targetRevision: HEAD
+    path: awsInstagramCloneWebApplication/k8s/helm/frontend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
