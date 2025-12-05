@@ -13,10 +13,14 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/auth-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8081"
         - name: env.SPRING_DATASOURCE_URL
-          value: "jdbc:postgresql://postgres-service:5432/users_db"
+          value: "jdbc:postgresql://instagram-clone-db.cg32wuc800vg.us-east-1.rds.amazonaws.com:5432/users_db"
+        - name: env.SPRING_DATASOURCE_USERNAME
+          value: "postgres"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -40,10 +44,14 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/user-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8082"
         - name: env.SPRING_DATASOURCE_URL
-          value: "jdbc:postgresql://postgres-service:5432/users_db"
+          value: "jdbc:postgresql://instagram-clone-db.cg32wuc800vg.us-east-1.rds.amazonaws.com:5432/users_db"
+        - name: env.SPRING_DATASOURCE_USERNAME
+          value: "postgres"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -67,10 +75,16 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/post-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8083"
         - name: env.SPRING_DATASOURCE_URL
-          value: "jdbc:postgresql://postgres-service:5432/posts_db"
+          value: "jdbc:postgresql://instagram-clone-db.cg32wuc800vg.us-east-1.rds.amazonaws.com:5432/posts_db"
+        - name: env.SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: env.AWS_S3_BUCKET
+          value: "instagram-clone-media-20251205074016944500000001"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -94,10 +108,14 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/feed-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8084"
         - name: env.SPRING_DATA_REDIS_HOST
-          value: "redis-service"
+          value: "instagram-clone-redis.wglccr.ng.0001.use1.cache.amazonaws.com"
+        - name: env.SPRING_DATA_REDIS_PORT
+          value: "6379"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -121,10 +139,14 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/notification-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8085"
         - name: env.SPRING_DATASOURCE_URL
-          value: "jdbc:postgresql://postgres-service:5432/notifications_db"
+          value: "jdbc:postgresql://instagram-clone-db.cg32wuc800vg.us-east-1.rds.amazonaws.com:5432/notifications_db"
+        - name: env.SPRING_DATASOURCE_USERNAME
+          value: "postgres"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -148,6 +170,8 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/ai-service
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8086"
   destination:
@@ -173,20 +197,24 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/api-gateway
+        - name: image.tag
+          value: "latest"
         - name: service.port
           value: "8080"
+        - name: service.type
+          value: "LoadBalancer"
         - name: env.AUTH_SERVICE_URL
-          value: "http://auth-service:8081"
+          value: "http://auth-service-backend-service:8081"
         - name: env.USER_SERVICE_URL
-          value: "http://user-service:8082"
+          value: "http://user-service-backend-service:8082"
         - name: env.POST_SERVICE_URL
-          value: "http://post-service:8083"
+          value: "http://post-service-backend-service:8083"
         - name: env.FEED_SERVICE_URL
-          value: "http://feed-service:8084"
+          value: "http://feed-service-backend-service:8084"
         - name: env.NOTIFICATION_SERVICE_URL
-          value: "http://notification-service:8085"
+          value: "http://notification-service-backend-service:8085"
         - name: env.AI_SERVICE_URL
-          value: "http://ai-service:8086"
+          value: "http://ai-service-backend-service:8086"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -210,8 +238,10 @@ spec:
       parameters:
         - name: image.repository
           value: 863394984731.dkr.ecr.us-east-1.amazonaws.com/frontend
+        - name: image.tag
+          value: "latest"
         - name: env.VITE_API_URL
-          value: "http://api-gateway:8080" # In real prod, this should be the Ingress URL
+          value: "http://api-gateway-backend-service:8080"
   destination:
     server: https://kubernetes.default.svc
     namespace: default

@@ -252,9 +252,37 @@ kubectl apply -f k8s/secrets/db-credentials.yaml
 # Verify secret creation
 kubectl get secret app-secrets -n instagram-clone
 ```
+
+### 4.6 Understanding Helm Charts
+
+The project uses Helm charts to deploy microservices. The charts are located in `k8s/helm/`:
+
+| Chart | Purpose |
+|-------|---------|
+| `backend-service` | Generic chart for all 7 backend microservices |
+| `frontend` | Chart for the React frontend |
+
+**Chart Structure:**
+```
+k8s/helm/backend-service/
+├── Chart.yaml              # Chart metadata (name, version)
+├── values.yaml             # Default configuration values
+└── templates/
+    ├── _helpers.tpl        # Template helper functions
+    ├── configmap.yaml      # Environment variables (non-sensitive)
+    ├── deployment.yaml     # Pod deployment spec
+    ├── secret.yaml         # Sensitive environment variables
+    ├── service.yaml        # Kubernetes Service
+    └── serviceaccount.yaml # ServiceAccount for IRSA
 ```
 
-### 4.6 Deploy Application via Argo CD
+**Key Configuration Points:**
+- `image.repository`: ECR repository URL
+- `image.tag`: Docker image tag (e.g., `latest`)
+- `service.port`: The port the service listens on
+- `env.*`: Environment variables passed to the container
+
+### 4.7 Deploy Application via Argo CD
 
 ```bash
 # Install Argo CD
@@ -263,10 +291,48 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 
 # Wait for Argo CD
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
-
-# Apply Application Manifests
-kubectl apply -f ../k8s/argocd/application.yaml
 ```
+
+**IMPORTANT:** Before applying the ArgoCD applications, you must push the Helm chart changes to your Git repository:
+```bash
+cd /home/ubuntu/aws_three_tier_projects/awsInstagramCloneWebApplication
+git add .
+git commit -m "Add serviceaccount.yaml templates and update ArgoCD applications"
+git push origin main
+```
+
+**Apply the ArgoCD Application Manifests:**
+```bash
+kubectl apply -f k8s/argocd/application.yaml
+```
+
+### 4.8 Access Argo CD Portal
+
+**Expose Argo CD Server via LoadBalancer:**
+```bash
+# Patch argocd-server service to LoadBalancer
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
+# Wait for LoadBalancer to be assigned
+kubectl get svc argocd-server -n argocd -w
+# Press Ctrl+C once EXTERNAL-IP is assigned
+```
+
+**Get Argo CD Admin Credentials:**
+```bash
+# Get the initial admin password
+ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo "Argo CD Admin Password: $ARGOCD_PASSWORD"
+
+# Get the LoadBalancer URL
+ARGOCD_URL=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "Argo CD URL: https://$ARGOCD_URL"
+```
+
+**Login to Argo CD:**
+*   **URL:** `https://<ARGOCD_URL>` (accept the self-signed certificate warning)
+*   **Username:** `admin`
+*   **Password:** The password retrieved above
 
 ---
 
