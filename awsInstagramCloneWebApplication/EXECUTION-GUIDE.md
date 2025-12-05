@@ -253,7 +253,67 @@ kubectl apply -f k8s/secrets/db-credentials.yaml
 kubectl get secret app-secrets -n instagram-clone
 ```
 
-### 4.6 Understanding Helm Charts
+### 4.6 Database Initialization (REQUIRED BEFORE DEPLOYING APPS)
+
+⚠️ **CRITICAL:** The databases must exist in RDS before deploying the microservices, otherwise pods will crash on startup.
+
+```bash
+# The RDS_ENDPOINT from Terraform includes port (e.g., hostname:5432)
+# Strip the port for psql -h command
+RDS_HOST=$(echo $RDS_ENDPOINT | cut -d: -f1)
+RDS_PORT=$(echo $RDS_ENDPOINT | cut -d: -f2)
+
+# Password is stored in your terraform.tfvars file (db_password variable)
+# Or retrieve from AWS Secrets Manager if you stored it there
+cat terraform/terraform.tfvars | grep db_password
+
+# Connect to RDS (ensure RDS Security Group allows your IP or use a bastion)
+psql -h $RDS_HOST -p $RDS_PORT -U postgres -W
+# Enter the password from terraform.tfvars when prompted
+
+# Create databases for each service
+CREATE DATABASE users_db;        -- Used by auth-service AND user-service
+CREATE DATABASE posts_db;        -- Used by post-service
+CREATE DATABASE notifications_db; -- Used by notification-service
+-- Note: feed-service uses Redis (ElastiCache), not PostgreSQL
+-- Note: ai-service and api-gateway do not require databases
+
+# Verify
+\l
+
+# Exit
+\q
+```
+
+### 4.6.1 Verify Redis (ElastiCache) Connectivity
+
+Feed-service uses AWS ElastiCache Redis. Verify the connection:
+
+```bash
+# Get Redis endpoint from Terraform outputs
+echo $REDIS_ENDPOINT
+# Should show: instagram-clone-redis.wglccr.ng.0001.use1.cache.amazonaws.com
+
+# The Redis configuration is automatically passed to feed-service via ArgoCD parameters:
+#   - SPRING_DATA_REDIS_HOST: $REDIS_ENDPOINT
+#   - SPRING_DATA_REDIS_PORT: 6379
+```
+
+**Note:** ElastiCache is only accessible from within the VPC. You cannot connect directly from your local machine.
+
+### 4.7 Service Configuration Summary
+
+| Service | Data Store | Configuration |
+|---------|------------|---------------|
+| auth-service | PostgreSQL | `SPRING_DATASOURCE_URL` → RDS `users_db` |
+| user-service | PostgreSQL | `SPRING_DATASOURCE_URL` → RDS `users_db` |
+| post-service | PostgreSQL | `SPRING_DATASOURCE_URL` → RDS `posts_db` |
+| notification-service | PostgreSQL | `SPRING_DATASOURCE_URL` → RDS `notifications_db` |
+| feed-service | Redis | `SPRING_DATA_REDIS_HOST` → ElastiCache |
+| ai-service | None | Stateless service |
+| api-gateway | None | Routes requests to other services |
+
+### 4.8 Understanding Helm Charts
 
 The project uses Helm charts to deploy microservices. The charts are located in `k8s/helm/`:
 
@@ -282,7 +342,7 @@ k8s/helm/backend-service/
 - `service.port`: The port the service listens on
 - `env.*`: Environment variables passed to the container
 
-### 4.7 Deploy Application via Argo CD
+### 4.9 Deploy Application via Argo CD
 
 ```bash
 # Install Argo CD
@@ -306,7 +366,7 @@ git push origin main
 kubectl apply -f k8s/argocd/application.yaml
 ```
 
-### 4.8 Access Argo CD Portal
+### 4.10 Access Argo CD Portal
 
 **Expose Argo CD Server via LoadBalancer:**
 ```bash
@@ -345,21 +405,6 @@ You must update the `application.yaml` or Argo CD parameters to point to your EC
 ```bash
 # Example for Auth Service
 argocd app set auth-service -p image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service
-```
-
-### 5.2 Database Initialization
-
-The microservices use Flyway/Hibernate for schema initialization. Ensure the databases exist in RDS.
-
-```bash
-# Connect to RDS (via bastion or if public access enabled)
-psql -h $RDS_ENDPOINT -U postgres -W
-
-# Create databases
-CREATE DATABASE users_db;
-CREATE DATABASE posts_db;
-CREATE DATABASE notifications_db;
-CREATE DATABASE feed_db;
 ```
 
 ---
