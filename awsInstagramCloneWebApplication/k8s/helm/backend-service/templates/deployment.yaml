@@ -48,3 +48,6 @@ spec:
                 name: {{ include "backend-service.fullname" . }}-config
             - secretRef:
                 name: {{ include "backend-service.fullname" . }}-secret
+            - secretRef:
+                name: db-credentials
+                optional: true
