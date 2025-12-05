@@ -257,33 +257,62 @@ kubectl get secret app-secrets -n instagram-clone
 
 ⚠️ **CRITICAL:** The databases must exist in RDS before deploying the microservices, otherwise pods will crash on startup.
 
+#### Password Best Practices
+
+> **IMPORTANT:** When setting `db_password` in `terraform.tfvars`, use **alphanumeric characters only** (letters, numbers, underscores).
+> 
+> ❌ **Avoid:** `GE<*8BKKw7Orb6:DW#5w[~yts$RE` (special chars cause shell escaping issues)
+> 
+> ✅ **Recommended:** `InstagramClone2024SecureDB` (easy to use in scripts)
+
+#### Connecting to RDS from Kubernetes
+
+RDS is in a **private subnet** - you cannot connect directly from your local machine. Use kubectl to run psql from inside the cluster:
+
 ```bash
-# The RDS_ENDPOINT from Terraform includes port (e.g., hostname:5432)
-# Strip the port for psql -h command
-RDS_HOST=$(echo $RDS_ENDPOINT | cut -d: -f1)
-RDS_PORT=$(echo $RDS_ENDPOINT | cut -d: -f2)
+# Set variables
+RDS_HOST="instagram-clone-db.cg32wuc800vg.us-east-1.rds.amazonaws.com"
+RDS_PORT="5432"
 
-# Password is stored in your terraform.tfvars file (db_password variable)
-# Or retrieve from AWS Secrets Manager if you stored it there
-cat terraform/terraform.tfvars | grep db_password
+# Option 1: Simple password (recommended)
+# If your password is alphanumeric (e.g., InstagramClone2024SecureDB):
+kubectl run psql-client --rm -it --restart=Never \
+  --image=postgres:15 \
+  -- psql "postgresql://postgres:YOUR_PASSWORD@$RDS_HOST:$RDS_PORT/postgres?sslmode=require"
 
-# Connect to RDS (ensure RDS Security Group allows your IP or use a bastion)
-psql -h $RDS_HOST -p $RDS_PORT -U postgres -W
-# Enter the password from terraform.tfvars when prompted
+# Option 2: Password with special characters
+# URL-encode special characters: < = %3C, > = %3E, # = %23, etc.
+# Example: GE<*8BKK → GE%3C%2A8BKK
+kubectl run psql-client --rm -it --restart=Never \
+  --image=postgres:15 \
+  -- psql "postgresql://postgres:URL_ENCODED_PASSWORD@$RDS_HOST:$RDS_PORT/postgres?sslmode=require"
+```
 
-# Create databases for each service
-CREATE DATABASE users_db;        -- Used by auth-service AND user-service
-CREATE DATABASE posts_db;        -- Used by post-service
-CREATE DATABASE notifications_db; -- Used by notification-service
--- Note: feed-service uses Redis (ElastiCache), not PostgreSQL
--- Note: ai-service and api-gateway do not require databases
+#### Create Databases
 
-# Verify
+Once connected to PostgreSQL:
+```sql
+-- Create databases for each service
+CREATE DATABASE users_db;         -- auth-service AND user-service
+CREATE DATABASE posts_db;         -- post-service
+CREATE DATABASE notifications_db; -- notification-service
+
+-- Verify
 \l
 
-# Exit
+-- Exit
 \q
 ```
+
+#### Common Errors and Fixes
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Connection timed out` | RDS in private subnet | Use `kubectl run` method above |
+| `password authentication failed` | Special characters in password | URL-encode password or use simple password |
+| `no encryption` | RDS requires SSL | Add `?sslmode=require` to connection string |
+| `Name or service not known` | Endpoint includes port | Use only hostname, specify port separately |
+
 
 ### 4.6.1 Verify Redis (ElastiCache) Connectivity
 
