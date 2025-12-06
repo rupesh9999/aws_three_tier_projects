@@ -3,10 +3,9 @@ module "eks" {
   version = "~> 20.31"
 
   cluster_name    = "${var.project_name}-cluster"
-  cluster_version = "1.31"
+  cluster_version = "1.33"
 
-  # Ensure the EKS control plane uses standard support (not extended support)
-  # Note: Can only change support type when cluster is on a version that supports STANDARD
+  # Switch to STANDARD support now that we're on 1.33
   cluster_upgrade_policy = {
     support_type = "STANDARD"
   }
