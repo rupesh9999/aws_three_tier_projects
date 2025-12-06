@@ -1,6 +1,9 @@
 spring:
   application:
     name: api-gateway
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.autoconfigure.LifecycleMvcEndpointAutoConfiguration
   cloud:
     gateway:
       routes:
