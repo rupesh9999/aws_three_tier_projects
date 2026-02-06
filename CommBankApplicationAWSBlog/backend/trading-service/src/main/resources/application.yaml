@@ -1,0 +1,95 @@
+# Application Configuration
+spring:
+  application:
+    name: trading-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:commsec}
+    username: ${DB_USERNAME:commsec_admin}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      pool-name: TradingHikariPool
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Server Configuration
+server:
+  port: 8081
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/xml,text/plain
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.commsec: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Application-specific Configuration
+trading:
+  brokerage:
+    flat-fee: 9.95
+    percentage-fee: 0.0011
+  order:
+    max-open-orders: 100
+    default-expiry-days: 30

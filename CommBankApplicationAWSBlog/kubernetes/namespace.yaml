@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: commsec
+  labels:
+    name: commsec
+    environment: production
+    app.kubernetes.io/part-of: commsec-trading-platform

@@ -1,0 +1,25 @@
+# Market Data Service Configuration
+spring:
+  application:
+    name: market-data-service
+
+server:
+  port: 8083
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.commsec: DEBUG
+    org.springframework.web.socket: DEBUG

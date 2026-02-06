@@ -1,0 +1,140 @@
+# API Gateway Configuration
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        # Trading Service Routes
+        - id: trading-service
+          uri: http://trading-service:8081
+          predicates:
+            - Path=/api/v1/orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: tradingCircuitBreaker
+                fallbackUri: forward:/fallback/trading
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+            - RewritePath=/api/v1/(?<segment>.*), /api/v1/${segment}
+
+        # Portfolio Service Routes
+        - id: portfolio-service
+          uri: http://portfolio-service:8082
+          predicates:
+            - Path=/api/v1/portfolio/**, /api/v1/holdings/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: portfolioCircuitBreaker
+                fallbackUri: forward:/fallback/portfolio
+            - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+
+        # Market Data Service Routes
+        - id: market-data-service
+          uri: http://market-data-service:8083
+          predicates:
+            - Path=/api/v1/market/**, /api/v1/quotes/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: marketDataCircuitBreaker
+                fallbackUri: forward:/fallback/market
+
+        # WebSocket Route for Real-time Market Data
+        - id: market-data-websocket
+          uri: ws://market-data-service:8083
+          predicates:
+            - Path=/ws/**
+          filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+      default-filters:
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            methods: GET
+            backoff:
+              firstBackoff: 100ms
+              maxBackoff: 500ms
+              factor: 2
+
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "https://*.commsec.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+# Server Configuration
+server:
+  port: 8080
+  shutdown: graceful
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+    gateway:
+      enabled: true
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      tradingCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 5
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 2s
+      portfolioCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+      marketDataCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 15s
+  timelimiter:
+    instances:
+      tradingCircuitBreaker:
+        timeoutDuration: 5s
+      portfolioCircuitBreaker:
+        timeoutDuration: 5s
+      marketDataCircuitBreaker:
+        timeoutDuration: 3s
+
+# Logging
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    io.github.resilience4j: DEBUG

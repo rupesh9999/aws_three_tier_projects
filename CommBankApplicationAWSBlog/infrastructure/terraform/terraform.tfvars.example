@@ -1,0 +1,52 @@
+# Terraform Variable Definitions
+# Copy this file to terraform.tfvars and fill in the values
+
+# General Configuration
+project_name = "commsec"
+environment  = "production"
+aws_region   = "us-east-1"
+
+# VPC Configuration
+vpc_cidr           = "10.0.0.0/16"
+enable_nat_gateway = true
+single_nat_gateway = false  # Set to true for cost savings in non-production
+
+# EKS Configuration
+eks_cluster_name    = "commsec-cluster"
+eks_cluster_version = "1.34"
+
+# Web tier nodes
+eks_web_node_instance_types = ["t3.medium"]
+eks_web_node_desired_size   = 3
+eks_web_node_min_size       = 3
+eks_web_node_max_size       = 10
+
+# App tier nodes
+eks_app_node_instance_types = ["t3.large"]
+eks_app_node_desired_size   = 3
+eks_app_node_min_size       = 3
+eks_app_node_max_size       = 10
+
+# RDS Configuration
+db_instance_class          = "db.r6g.large"
+db_name                    = "commsec"
+db_username                = "commsec_admin"
+# db_password              = ""  # Set via environment variable: TF_VAR_db_password
+db_allocated_storage       = 100
+db_max_allocated_storage   = 1000
+db_backup_retention_period = 35
+db_multi_az                = true
+
+# CloudFront Configuration
+enable_cloudfront    = true
+cloudfront_price_class = "PriceClass_100"
+
+# S3 Configuration
+s3_bucket_prefix = "commsec"
+
+# Additional Tags
+additional_tags = {
+  Owner       = "platform-team"
+  CostCenter  = "trading-platform"
+  Compliance  = "ASIC"
+}

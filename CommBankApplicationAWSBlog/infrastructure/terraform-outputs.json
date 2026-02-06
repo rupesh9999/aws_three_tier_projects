@@ -1,0 +1,201 @@
+{
+  "aws_lb_controller_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::863394984731:role/commsec-aws-lb-controller-irsa"
+  },
+  "cluster_autoscaler_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::863394984731:role/commsec-cluster-autoscaler-irsa"
+  },
+  "database_subnets": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "subnet-0cd9dfb8cac7250d4",
+      "subnet-02835a421b5bf9345",
+      "subnet-0d1b02d6a43de080f"
+    ]
+  },
+  "db_credentials_secret_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:secretsmanager:us-east-1:863394984731:secret:commsec/production/db-credentials-qYG2OL"
+  },
+  "deployment_summary": {
+    "sensitive": false,
+    "type": "string",
+    "value": "\n╔══════════════════════════════════════════════════════════════╗\n║            CommSec Trading Platform - Deployment Summary      ║\n╠══════════════════════════════════════════════════════════════╣\n║                                                               ║\n║  VPC ID:              vpc-0f532edaa3d36ae3e\n║  EKS Cluster:         commsec-cluster\n║  EKS Version:         1.34\n║  RDS Endpoint:        commsec-postgres.cg32wuc800vg.us-east-1.rds.amazonaws.com\n║  CloudFront Domain:   Not enabled\n║                                                               ║\n║  Next Steps:                                                  ║\n║  1. Run: commsec-cluster --region us-east-1\n║  2. Deploy Kubernetes manifests                               ║\n║  3. Build and push Docker images to ECR                       ║\n║                                                               ║\n╚══════════════════════════════════════════════════════════════╝\n\n"
+  },
+  "ecr_api_gateway_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-api-gateway"
+  },
+  "ecr_frontend_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-frontend"
+  },
+  "ecr_market_data_service_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-market-data-service"
+  },
+  "ecr_portfolio_service_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-portfolio-service"
+  },
+  "ecr_trading_service_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-trading-service"
+  },
+  "eks_cluster_certificate_authority_data": {
+    "sensitive": true,
+    "type": "string",
+    "value": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lJWTdrWHZ5K0VyZmt3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TmpBeU1EUXdOakUyTWpoYUZ3MHpOakF5TURJd05qSXhNamhhTUJVeApFekFSQmdOVkJBTVRDbXQxWW1WeWJtVjBaWE13Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUUNkSnV4WVRBMTYwcCtMSVpOYmNqdDFCS09lL1AzUHBhWDQ4N3A5MTFna0pFQXZMNzVoTXVpU0dnNjgKdC9JbEFCTENEeGM4VGVkZnd2MU5lZUlnTnJ3c1F2blg2R25HVUZ2Mk9EM3YvQXF0am1RVnFPdEpoV2tqWWNGdgpPSjFXMFA5blVqZWwraEdLcEVHaDBDVzE0MjVOcG9jL3JxdUtOeHlWanRGZkJjL29pQW12dWUyM0FBVEF2WnBXCkIyWUo0d1UrSjFsRU9vQnJmVUtNdnBXMWRUL1VFeklCZ1JYSEdyTTN0OE8vbjJQSjJzNXVpMjE5OFVScEtJZmQKdHJFYlJObzY4bjRqam9ROEM5U0p3NlpJYU1xNkNVajZtaVpNWXpqK1RnZHpiSjBBQXNEY3NEM1BCRHRITnZMNgpBL29wL1QvMmJFcmEyVlpMb2pPcWlwL1lDZm5EQWdNQkFBR2pXVEJYTUE0R0ExVWREd0VCL3dRRUF3SUNwREFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXQkJRVUduVmV3N2JOS0tEc3RBY3p3bTJKVSttZE1EQVYKQmdOVkhSRUVEakFNZ2dwcmRXSmxjbTVsZEdWek1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ1hZOVh5UkFQNwp0Vm1yS08vMSt6c3lnMEZrWnNvc1B1RGFiQVJrbXJyNUsvLy9iU0gzWXdHbE1YYTlCKzhsWWdJUmJYSGdRbHpJCjVuRElFMThHNHRrV01aVW5VaDhUdEczR2JqRG5MZXdZOEJQdk1VbmwvWmpPWURQMi9wb3RrMkdKL3p1TU9ob3QKd2l2bEV4UWVYOXh3VkdIbjZYdVVpbWc1SzZVd0d3Q2hsaE01bWwrajE2NXNsWFk1WEptYTExMGJMWTB6VlhNYgptc0xKblhOeGRJUm5VQkdIUFJLZmMrYVd5cGs3ZzdnV01NbGsyTkhWRkthdEpGeUdJdGZwNUVKLy9yRUg2QnZ5Cm5IK290ZDV2VnkzdVlTTUxydW9mT1F4VGpRd2paQ2IvR2xCTkR0QzhIekk3UGNQVHZBWnR3V29LSGFZNm9CKzMKaFprZ2hPM2JXODN1Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+  },
+  "eks_cluster_endpoint": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://4C9FB4C7CFB19BF1A5A48C9217228F4B.gr7.us-east-1.eks.amazonaws.com"
+  },
+  "eks_cluster_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec-cluster"
+  },
+  "eks_cluster_oidc_issuer_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://oidc.eks.us-east-1.amazonaws.com/id/4C9FB4C7CFB19BF1A5A48C9217228F4B"
+  },
+  "eks_cluster_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-07752b32db5baf9b0"
+  },
+  "eks_node_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-00fb8552389cb0f5e"
+  },
+  "eks_update_kubeconfig_command": {
+    "sensitive": false,
+    "type": "string",
+    "value": "aws eks update-kubeconfig --name commsec-cluster --region us-east-1"
+  },
+  "nat_gateway_ids": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "nat-0bb7d6b1655f94fec",
+      "nat-0fddcde8b808ec559",
+      "nat-0984e857725f835a9"
+    ]
+  },
+  "private_subnets": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "subnet-0e634f7dd9a01a1b0",
+      "subnet-0af814fc60297d052",
+      "subnet-00888b99500cc45a6"
+    ]
+  },
+  "public_subnets": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "subnet-0686e71a3766661af",
+      "subnet-0944294e93e987b5e",
+      "subnet-01cf3d35a2018d389"
+    ]
+  },
+  "rds_address": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec-postgres.cg32wuc800vg.us-east-1.rds.amazonaws.com"
+  },
+  "rds_database_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec"
+  },
+  "rds_endpoint": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec-postgres.cg32wuc800vg.us-east-1.rds.amazonaws.com:5432"
+  },
+  "rds_master_username": {
+    "sensitive": true,
+    "type": "string",
+    "value": "commsec_admin"
+  },
+  "rds_port": {
+    "sensitive": false,
+    "type": "number",
+    "value": 5432
+  },
+  "s3_binaries_bucket": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec-binaries-863394984731"
+  },
+  "s3_binaries_bucket_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:s3:::commsec-binaries-863394984731"
+  },
+  "s3_static_assets_bucket": {
+    "sensitive": false,
+    "type": "string",
+    "value": "commsec-static-863394984731"
+  },
+  "s3_static_assets_bucket_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:s3:::commsec-static-863394984731"
+  },
+  "vpc_cidr_block": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.0.0/16"
+  },
+  "vpc_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "vpc-0f532edaa3d36ae3e"
+  }
+}

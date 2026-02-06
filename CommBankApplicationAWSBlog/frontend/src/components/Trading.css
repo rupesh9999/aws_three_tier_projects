@@ -1,0 +1,452 @@
+/* Trading Page Styles */
+
+.trading {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.trading-layout {
+    display: grid;
+    grid-template-columns: 350px 400px 1fr;
+    gap: 1rem;
+}
+
+/* Stock Panel */
+.stock-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    height: fit-content;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.search-box input::placeholder {
+    color: var(--text-muted);
+}
+
+.stock-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.stock-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.stock-item:hover {
+    background: var(--bg-hover);
+}
+
+.stock-item.selected {
+    background: rgba(255, 204, 0, 0.1);
+    border-left: 3px solid var(--accent-primary);
+}
+
+.stock-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stock-main .symbol {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.stock-main .name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stock-price-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.stock-price-info .price {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.stock-price-info .change {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Order Panel */
+.order-panel {
+    position: sticky;
+    top: calc(var(--header-height) + 1rem);
+}
+
+.order-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.order-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.selected-stock {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.selected-stock .symbol {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.selected-stock .price {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.selected-stock .change {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.order-form {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Side Toggle */
+.side-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    background: var(--bg-secondary);
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+}
+
+.side-btn {
+    padding: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+}
+
+.side-btn.buy:hover {
+    color: var(--positive);
+}
+
+.side-btn.sell:hover {
+    color: var(--negative);
+}
+
+.side-btn.buy.active {
+    background: var(--positive);
+    color: white;
+}
+
+.side-btn.sell.active {
+    background: var(--negative);
+    color: white;
+}
+
+/* Form Groups */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-group input {
+    padding: 0.875rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Order Type Grid */
+.order-type-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.25rem;
+}
+
+.order-type-btn {
+    padding: 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.order-type-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.order-type-btn.active {
+    background: var(--accent-primary);
+    color: var(--bg-primary);
+}
+
+/* Order Summary */
+.order-summary {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.summary-row .total {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+}
+
+/* Submit Button */
+.submit-btn {
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.submit-btn.buy {
+    background: var(--positive);
+    color: white;
+}
+
+.submit-btn.sell {
+    background: var(--negative);
+    color: white;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Orders Panel */
+.orders-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.orders-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.tab {
+    flex: 1;
+    padding: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.tab:hover {
+    color: var(--text-primary);
+}
+
+.tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.orders-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+}
+
+.order-item:hover {
+    background: var(--bg-hover);
+}
+
+.order-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.status-icon {
+    flex-shrink: 0;
+}
+
+.status-icon.filled {
+    color: var(--positive);
+}
+
+.status-icon.cancelled {
+    color: var(--negative);
+}
+
+.status-icon.triggered {
+    color: var(--accent-primary);
+}
+
+.status-icon.pending {
+    color: var(--text-muted);
+}
+
+.order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.order-symbol {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.order-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.order-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.order-qty {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.order-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.cancel-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--negative);
+    border: 1px solid var(--negative);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.cancel-btn:hover {
+    background: var(--negative);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .trading-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .stock-panel {
+        grid-column: 1 / -1;
+    }
+
+    .stock-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .trading-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .stock-list {
+        grid-template-columns: 1fr;
+    }
+
+    .order-panel {
+        position: static;
+    }
+}

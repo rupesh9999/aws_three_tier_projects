@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-data-service
+  namespace: commsec
+  labels:
+    app: market-data-service
+    tier: app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: market-data-service
+  template:
+    metadata:
+      labels:
+        app: market-data-service
+        tier: app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      nodeSelector:
+        tier: app
+      serviceAccountName: market-data-service
+      containers:
+        - name: market-data-service
+          image: 863394984731.dkr.ecr.us-east-1.amazonaws.com/commsec-market-data-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8083
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8083
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8083
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: market-data-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: market-data-service
+  namespace: commsec
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8083
+      targetPort: 8083
+      name: http
+  selector:
+    app: market-data-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: market-data-service
+  namespace: commsec
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: market-data-service-hpa
+  namespace: commsec
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: market-data-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -1,0 +1,327 @@
+/* Market Data Page Styles */
+
+.market-data {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.market-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 20px;
+}
+
+.market-status.open {
+    background: var(--positive-bg);
+    color: var(--positive);
+}
+
+.market-status.closed {
+    background: var(--negative-bg);
+    color: var(--negative);
+}
+
+.last-update {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.refresh-btn {
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.refresh-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.refresh-btn.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Indices Grid */
+.indices-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.index-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    transition: all var(--transition-fast);
+}
+
+.index-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.1);
+}
+
+.index-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.index-name {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.index-change {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.index-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.index-chart {
+    margin-top: 0.5rem;
+}
+
+/* Market Movers */
+.movers-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.movers-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.movers-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.movers-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.movers-icon.positive {
+    color: var(--positive);
+}
+
+.movers-icon.negative {
+    color: var(--negative);
+}
+
+.movers-list {
+    padding: 0.5rem;
+}
+
+.mover-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.mover-item:hover {
+    background: var(--bg-hover);
+}
+
+.mover-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.mover-symbol {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.mover-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.mover-data {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.125rem;
+}
+
+.mover-price {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.mover-change {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.15rem 0.4rem;
+    border-radius: var(--radius-sm);
+}
+
+.mover-change.positive {
+    background: var(--positive-bg);
+}
+
+.mover-change.negative {
+    background: var(--negative-bg);
+}
+
+/* Sector Performance */
+.sectors-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+}
+
+.sectors-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.sectors-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.sector-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+}
+
+.sector-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.sector-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.sector-change {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.sector-volume {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sector-bar {
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.sector-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width var(--transition-normal);
+}
+
+.sector-bar-fill.positive {
+    background: var(--positive);
+}
+
+.sector-bar-fill.negative {
+    background: var(--negative);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .indices-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sectors-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .indices-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .movers-section {
+        grid-template-columns: 1fr;
+    }
+
+    .sectors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
