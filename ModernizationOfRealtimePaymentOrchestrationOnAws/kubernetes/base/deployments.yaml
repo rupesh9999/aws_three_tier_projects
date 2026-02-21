@@ -1,0 +1,453 @@
+---
+# Payment Initiation Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-initiation
+  namespace: payment-system
+  labels:
+    app: payment-initiation
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-initiation
+  template:
+    metadata:
+      labels:
+        app: payment-initiation
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: payment-initiation
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-initiation:latest
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            failureThreshold: 30
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-initiation
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-initiation
+  ports:
+    - port: 8081
+      targetPort: 8081
+      protocol: TCP
+  type: ClusterIP
+---
+# Payment Execution Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-execution
+  namespace: payment-system
+  labels:
+    app: payment-execution
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-execution
+  template:
+    metadata:
+      labels:
+        app: payment-execution
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+    spec:
+      containers:
+        - name: payment-execution
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-execution:latest
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-execution
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-execution
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP
+---
+# Payment Tracking Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-tracking
+  namespace: payment-system
+  labels:
+    app: payment-tracking
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-tracking
+  template:
+    metadata:
+      labels:
+        app: payment-tracking
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+    spec:
+      containers:
+        - name: payment-tracking
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-tracking:latest
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-tracking
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-tracking
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP
+---
+# Payment Reconciliation Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-reconciliation
+  namespace: payment-system
+  labels:
+    app: payment-reconciliation
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-reconciliation
+  template:
+    metadata:
+      labels:
+        app: payment-reconciliation
+        tier: backend
+    spec:
+      containers:
+        - name: payment-reconciliation
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-reconciliation:latest
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            initialDelaySeconds: 60
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-reconciliation
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-reconciliation
+  ports:
+    - port: 8084
+      targetPort: 8084
+  type: ClusterIP
+---
+# Payment Billing Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-billing
+  namespace: payment-system
+  labels:
+    app: payment-billing
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-billing
+  template:
+    metadata:
+      labels:
+        app: payment-billing
+        tier: backend
+    spec:
+      containers:
+        - name: payment-billing
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-billing:latest
+          ports:
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            initialDelaySeconds: 60
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-billing
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-billing
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: ClusterIP
+---
+# Payment Risk Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-risk
+  namespace: payment-system
+  labels:
+    app: payment-risk
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-risk
+  template:
+    metadata:
+      labels:
+        app: payment-risk
+        tier: backend
+    spec:
+      containers:
+        - name: payment-risk
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-risk:latest
+          ports:
+            - containerPort: 8086
+          envFrom:
+            - configMapRef:
+                name: payment-config
+            - secretRef:
+                name: payment-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8086
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8086
+            initialDelaySeconds: 60
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-risk
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-risk
+  ports:
+    - port: 8086
+      targetPort: 8086
+  type: ClusterIP
+---
+# Frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-frontend
+  namespace: payment-system
+  labels:
+    app: payment-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-frontend
+  template:
+    metadata:
+      labels:
+        app: payment-frontend
+        tier: frontend
+    spec:
+      containers:
+        - name: payment-frontend
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/payment-orchestration-payment-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-frontend
+  namespace: payment-system
+spec:
+  selector:
+    app: payment-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer
