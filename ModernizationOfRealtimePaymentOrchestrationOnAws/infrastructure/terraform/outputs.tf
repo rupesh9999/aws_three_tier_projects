@@ -44,7 +44,7 @@ output "ecr_repositories" {
 
 output "api_gateway_url" {
   description = "API Gateway invoke URL"
-  value       = aws_api_gateway_deployment.main.invoke_url
+  value       = aws_api_gateway_stage.main.invoke_url
 }
 
 output "cloudfront_domain" {

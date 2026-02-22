@@ -10,7 +10,7 @@ resource "aws_cloudfront_distribution" "main" {
 
   # API Gateway Origin
   origin {
-    domain_name = replace(aws_api_gateway_deployment.main.invoke_url, "/^https?:\\/\\/([^/]+).*/", "$1")
+    domain_name = replace(aws_api_gateway_stage.main.invoke_url, "/^https?:\\/\\/([^/]+).*/", "$1")
     origin_id   = "api-gateway"
     origin_path = "/${var.environment}"
 

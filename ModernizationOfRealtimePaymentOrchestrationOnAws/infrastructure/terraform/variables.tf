@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for deployment"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "environment" {
@@ -73,7 +73,7 @@ variable "rds_username" {
 variable "msk_instance_type" {
   description = "MSK broker instance type"
   type        = string
-  default     = "kafka.t3.small"
+  default     = "kafka.m5.large"
 }
 
 variable "msk_kafka_version" {

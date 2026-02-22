@@ -30,7 +30,7 @@ node --version && helm version --short
 
 ### 1.3 Set environment variables
 ```bash
-export AWS_REGION="us-east-1"
+export AWS_REGION="us-east-2"
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export PROJECT_NAME="payment-orchestration"
 export ENVIRONMENT="production"
@@ -68,13 +68,13 @@ cd ..
 
 ### 2.3 Build Docker images
 ```bash
-# Backend services
-docker build -t payment-initiation:latest -f backend/payment-initiation/Dockerfile backend/payment-initiation
-docker build -t payment-execution:latest -f backend/payment-execution/Dockerfile backend/payment-execution
-docker build -t payment-tracking:latest -f backend/payment-tracking/Dockerfile backend/payment-tracking
-docker build -t payment-reconciliation:latest -f backend/payment-reconciliation/Dockerfile backend/payment-reconciliation
-docker build -t payment-billing:latest -f backend/payment-billing/Dockerfile backend/payment-billing
-docker build -t payment-risk:latest -f backend/payment-risk/Dockerfile backend/payment-risk
+# Backend services (single shared Dockerfile with SERVICE_NAME build arg)
+docker build -t payment-initiation:latest --build-arg SERVICE_NAME=payment-initiation -f backend/Dockerfile backend
+docker build -t payment-execution:latest --build-arg SERVICE_NAME=payment-execution -f backend/Dockerfile backend
+docker build -t payment-tracking:latest --build-arg SERVICE_NAME=payment-tracking -f backend/Dockerfile backend
+docker build -t payment-reconciliation:latest --build-arg SERVICE_NAME=payment-reconciliation -f backend/Dockerfile backend
+docker build -t payment-billing:latest --build-arg SERVICE_NAME=payment-billing -f backend/Dockerfile backend
+docker build -t payment-risk:latest --build-arg SERVICE_NAME=payment-risk -f backend/Dockerfile backend
 
 # Frontend
 docker build -t payment-frontend:latest -f frontend/Dockerfile frontend
@@ -126,8 +126,12 @@ curl -X POST http://localhost:8081/api/v1/payments \
     "creditorName": "Jane Smith"
   }' | jq .
 
-# Track the payment (use transaction ID from above response)
-curl -s http://localhost:8083/api/v1/payments/{transactionId}/status | jq .
+# Track the payment (replace TRANSACTION_ID with the transactionId from above response)
+export TXN_ID="<transactionId-from-above>"
+curl -s http://localhost:8083/api/v1/tracking/$TXN_ID | jq .
+
+# Or view all tracked payments
+curl -s http://localhost:8083/api/v1/tracking | jq .
 ```
 
 ### 3.4 Stop local environment
